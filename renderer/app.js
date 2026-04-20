@@ -1,6 +1,7 @@
 const STATUS_AVAILABLE = "موجود";
 const STATUS_BORROWED = "امانت داده شده";
 const OVERLAY_CLOSE_MS = 280;
+const libraryService = window.libraryService;
 
 const state = {
   books: [],
@@ -8,7 +9,10 @@ const state = {
   bookModalMode: "add",
   searchDebounceTimer: null,
   dialogResolver: null,
-  overlayTimers: new Map()
+  overlayTimers: new Map(),
+  refreshRequestId: 0,
+  refreshInProgress: false,
+  refreshButtonLabel: ""
 };
 
 const dom = {};
@@ -76,6 +80,7 @@ function cacheDom() {
   dom.dialogConfirmBtn = document.getElementById("dialogConfirmBtn");
 
   dom.toastContainer = document.getElementById("toastContainer");
+  state.refreshButtonLabel = dom.refreshBtn?.textContent || "";
 }
 
 function bindEvents() {
@@ -202,34 +207,64 @@ function bindFieldValidation(input, validator) {
   });
 }
 
+function ensureLibraryService() {
+  if (!libraryService || typeof libraryService.fetchLibraryData !== "function") {
+    throw new Error("Library service is unavailable.");
+  }
+  return libraryService;
+}
+
+function getActiveFilters() {
+  return {
+    search: dom.searchInput.value || "",
+    status: dom.statusFilter.value || ""
+  };
+}
+
+function setRefreshBusy(isBusy) {
+  state.refreshInProgress = isBusy;
+  dom.refreshBtn.disabled = isBusy;
+  if (!isBusy && state.refreshButtonLabel) {
+    dom.refreshBtn.textContent = state.refreshButtonLabel;
+  }
+}
+
 async function refreshData() {
+  const requestId = ++state.refreshRequestId;
+  setRefreshBusy(true);
+
   try {
-    const filters = {
-      search: dom.searchInput.value || "",
-      status: dom.statusFilter.value || "همه"
-    };
+    const service = ensureLibraryService();
+    const { books, summary } = await service.fetchLibraryData(getActiveFilters());
 
-    const [books, summary] = await Promise.all([
-      window.libraryAPI.getBooks(filters),
-      window.libraryAPI.getSummary()
-    ]);
+    if (requestId !== state.refreshRequestId) {
+      return;
+    }
 
-    state.books = books;
+    state.books = Array.isArray(books) ? books : [];
 
     if (!state.books.some((book) => book.id === state.selectedBookId)) {
       state.selectedBookId = null;
     }
 
-    renderSummary(summary);
+    renderSummary(summary || {});
     renderTable();
     updateActionButtons();
   } catch (error) {
+    if (requestId !== state.refreshRequestId) {
+      return;
+    }
+
     await showDialog({
-      title: "خطا در دریافت اطلاعات",
+      title: "Error",
       message: getFriendlyError(error),
       type: "danger",
-      confirmText: "متوجه شدم"
+      confirmText: "OK"
     });
+  } finally {
+    if (requestId === state.refreshRequestId) {
+      setRefreshBusy(false);
+    }
   }
 }
 
@@ -405,15 +440,20 @@ async function onSubmitBookForm(event) {
 
   try {
     if (state.bookModalMode === "add") {
-      await window.libraryAPI.addBook(payload);
+      await ensureLibraryService().addBook(payload);
       showToast({
         type: "success",
         title: "ثبت موفق",
         message: "کتاب جدید با موفقیت به کتابخانه اضافه شد."
       });
     } else {
-      payload.id = Number(dom.bookIdInput.value);
-      await window.libraryAPI.updateBook(payload);
+      const editingId = Number(dom.bookIdInput.value);
+      if (!Number.isInteger(editingId) || editingId <= 0) {
+        throw new Error("A valid book record must be selected for editing.");
+      }
+
+      payload.id = editingId;
+      await ensureLibraryService().updateBook(payload);
       showToast({
         type: "success",
         title: "ویرایش موفق",
@@ -456,7 +496,7 @@ async function onDeleteBook() {
   }
 
   try {
-    await window.libraryAPI.deleteBook(selectedBook.id);
+    await ensureLibraryService().deleteBook(selectedBook.id);
     state.selectedBookId = null;
     await refreshData();
     showToast({
@@ -508,6 +548,7 @@ async function onSubmitBorrowForm(event) {
   const borrowerName = dom.borrowerNameInput.value.trim();
   const borrowDate = dom.borrowDateInput.value;
   const selectedBookId = Number(dom.borrowBookIdInput.value);
+  const hasValidBookId = Number.isInteger(selectedBookId) && selectedBookId > 0;
 
   const errors = [];
 
@@ -519,6 +560,17 @@ async function onSubmitBorrowForm(event) {
 
   if (!borrowDate) {
     errors.push({ input: dom.borrowDateInput, message: "تاریخ امانت را مشخص کنید." });
+  }
+
+  if (!hasValidBookId) {
+    showFormNotice(dom.borrowFormNotice, "Please select a valid book before registering a borrow operation.", "error");
+    await showDialog({
+      title: "Book Selection",
+      message: "A selected record is required for borrow.",
+      type: "warning",
+      confirmText: "OK"
+    });
+    return;
   }
 
   if (errors.length > 0) {
@@ -544,7 +596,7 @@ async function onSubmitBorrowForm(event) {
   setButtonBusy(submitBtn, true, "در حال ثبت...");
 
   try {
-    await window.libraryAPI.borrowBook({
+    await ensureLibraryService().borrowBook({
       id: selectedBookId,
       borrower_name: borrowerName,
       borrow_date: borrowDate
@@ -600,7 +652,7 @@ async function onReturnBook() {
   }
 
   try {
-    await window.libraryAPI.returnBook(selectedBook.id);
+    await ensureLibraryService().returnBook(selectedBook.id);
     await refreshData();
     showToast({
       type: "success",
@@ -947,3 +999,4 @@ function getFriendlyError(error) {
   }
   return text;
 }
+

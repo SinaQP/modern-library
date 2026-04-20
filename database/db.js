@@ -47,7 +47,50 @@ function normalizeYear(year) {
   return parsedYear;
 }
 
+function normalizeBorrowDate(value) {
+  const borrowDate = sanitizeText(value);
+  if (!borrowDate) {
+    throw new Error("Borrow date is required.");
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(borrowDate)) {
+    throw new Error("Borrow date must be in YYYY-MM-DD format.");
+  }
+
+  return borrowDate;
+}
+
+function normalizeBorrowerName(value) {
+  const borrowerName = sanitizeText(value);
+  if (!borrowerName) {
+    throw new Error("Borrower name is required.");
+  }
+
+  if (borrowerName.length < 3) {
+    throw new Error("Borrower name must be at least 3 characters.");
+  }
+
+  return borrowerName;
+}
+
+function ensureObject(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  return value;
+}
+
+function toNullableText(value) {
+  const text = sanitizeText(value);
+  return text || null;
+}
+
 function initializeDatabase(dbPath) {
+  if (db) {
+    db.close();
+    db = null;
+  }
+
   const dirPath = path.dirname(dbPath);
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
@@ -55,6 +98,7 @@ function initializeDatabase(dbPath) {
 
   db = new Database(dbPath);
   db.pragma("journal_mode = WAL");
+  db.pragma("busy_timeout = 5000");
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS books (
@@ -74,9 +118,10 @@ function initializeDatabase(dbPath) {
 
 function getBooks(filters = {}) {
   ensureDatabase();
-  const search = normalizePersianDigits(sanitizeText(filters.search));
+  const normalizedFilters = ensureObject(filters);
+  const search = normalizePersianDigits(sanitizeText(normalizedFilters.search));
   const allowedStatuses = new Set(["همه", STATUS_AVAILABLE, STATUS_BORROWED]);
-  const statusCandidate = sanitizeText(filters.status);
+  const statusCandidate = sanitizeText(normalizedFilters.status);
   const status = allowedStatuses.has(statusCandidate) ? statusCandidate : "همه";
   const likePattern = `%${search}%`;
 
@@ -132,9 +177,10 @@ function getSummary() {
 
 function addBook(bookData = {}) {
   ensureDatabase();
+  const payload = ensureObject(bookData);
 
-  const title = sanitizeText(bookData.title);
-  const author = sanitizeText(bookData.author);
+  const title = sanitizeText(payload.title);
+  const author = sanitizeText(payload.author);
 
   if (!title) {
     throw new Error("عنوان کتاب نمی‌تواند خالی باشد.");
@@ -172,12 +218,16 @@ function addBook(bookData = {}) {
   const result = insertStatement.run({
     title,
     author,
-    category: sanitizeText(bookData.category) || null,
-    publish_year: normalizeYear(bookData.publish_year),
-    publisher: sanitizeText(bookData.publisher) || null,
-    description: sanitizeText(bookData.description) || null,
+    category: toNullableText(payload.category),
+    publish_year: normalizeYear(payload.publish_year),
+    publisher: toNullableText(payload.publisher),
+    description: toNullableText(payload.description),
     status: STATUS_AVAILABLE
   });
+
+  if (result.changes !== 1) {
+    throw new Error("Book insert failed.");
+  }
 
   return {
     id: Number(result.lastInsertRowid)
@@ -186,9 +236,10 @@ function addBook(bookData = {}) {
 
 function updateBook(bookData = {}) {
   ensureDatabase();
-  const id = normalizeId(bookData.id);
-  const title = sanitizeText(bookData.title);
-  const author = sanitizeText(bookData.author);
+  const payload = ensureObject(bookData);
+  const id = normalizeId(payload.id);
+  const title = sanitizeText(payload.title);
+  const author = sanitizeText(payload.author);
 
   if (!title) {
     throw new Error("عنوان کتاب نمی‌تواند خالی باشد.");
@@ -203,7 +254,7 @@ function updateBook(bookData = {}) {
     throw new Error("کتاب مورد نظر پیدا نشد.");
   }
 
-  db.prepare(`
+  const result = db.prepare(`
     UPDATE books
     SET
       title = @title,
@@ -217,11 +268,15 @@ function updateBook(bookData = {}) {
     id,
     title,
     author,
-    category: sanitizeText(bookData.category) || null,
-    publish_year: normalizeYear(bookData.publish_year),
-    publisher: sanitizeText(bookData.publisher) || null,
-    description: sanitizeText(bookData.description) || null
+    category: toNullableText(payload.category),
+    publish_year: normalizeYear(payload.publish_year),
+    publisher: toNullableText(payload.publisher),
+    description: toNullableText(payload.description)
   });
+
+  if (result.changes !== 1) {
+    throw new Error("Book update failed.");
+  }
 
   return { id, updated: true };
 }
@@ -240,74 +295,82 @@ function deleteBook(id) {
 
 function borrowBook(payload = {}) {
   ensureDatabase();
-  const id = normalizeId(payload.id);
-  const borrowerName = sanitizeText(payload.borrower_name);
-  const borrowDate = sanitizeText(payload.borrow_date);
+  const normalizedPayload = ensureObject(payload);
+  const id = normalizeId(normalizedPayload.id);
+  const borrowerName = normalizeBorrowerName(normalizedPayload.borrower_name);
+  const borrowDate = normalizeBorrowDate(normalizedPayload.borrow_date);
 
-  if (!borrowerName) {
-    throw new Error("نام امانت‌گیرنده الزامی است.");
-  }
+  const runBorrow = db.transaction(() => {
+    const targetBook = db
+      .prepare("SELECT id, status FROM books WHERE id = ?")
+      .get(id);
 
-  if (!borrowDate) {
-    throw new Error("تاریخ امانت الزامی است.");
-  }
+    if (!targetBook) {
+      throw new Error("Book not found.");
+    }
 
-  const targetBook = db
-    .prepare("SELECT id, status FROM books WHERE id = ?")
-    .get(id);
+    if (targetBook.status === STATUS_BORROWED) {
+      throw new Error("This book is already borrowed.");
+    }
 
-  if (!targetBook) {
-    throw new Error("کتاب مورد نظر پیدا نشد.");
-  }
+    const result = db.prepare(`
+      UPDATE books
+      SET
+        status = @status,
+        borrower_name = @borrower_name,
+        borrow_date = @borrow_date
+      WHERE id = @id
+    `).run({
+      id,
+      status: STATUS_BORROWED,
+      borrower_name: borrowerName,
+      borrow_date: borrowDate
+    });
 
-  if (targetBook.status === STATUS_BORROWED) {
-    throw new Error("این کتاب در حال حاضر امانت داده شده است.");
-  }
-
-  db.prepare(`
-    UPDATE books
-    SET
-      status = @status,
-      borrower_name = @borrower_name,
-      borrow_date = @borrow_date
-    WHERE id = @id
-  `).run({
-    id,
-    status: STATUS_BORROWED,
-    borrower_name: borrowerName,
-    borrow_date: borrowDate
+    if (result.changes !== 1) {
+      throw new Error("Borrow operation failed.");
+    }
   });
 
+  runBorrow();
   return { id, borrowed: true };
 }
 
 function returnBook(id) {
   ensureDatabase();
   const normalizedId = normalizeId(id);
-  const targetBook = db
-    .prepare("SELECT id, status FROM books WHERE id = ?")
-    .get(normalizedId);
 
-  if (!targetBook) {
-    throw new Error("کتاب مورد نظر پیدا نشد.");
-  }
+  const runReturn = db.transaction(() => {
+    const targetBook = db
+      .prepare("SELECT id, status FROM books WHERE id = ?")
+      .get(normalizedId);
 
-  if (targetBook.status !== STATUS_BORROWED) {
-    throw new Error("این کتاب در حال حاضر در وضعیت موجود است.");
-  }
+    if (!targetBook) {
+      throw new Error("Book not found.");
+    }
 
-  db.prepare(`
-    UPDATE books
-    SET
-      status = @status,
-      borrower_name = NULL,
-      borrow_date = NULL
-    WHERE id = @id
-  `).run({
-    id: normalizedId,
-    status: STATUS_AVAILABLE
+    if (targetBook.status !== STATUS_BORROWED) {
+      throw new Error("Only borrowed books can be returned.");
+    }
+
+    const result = db.prepare(`
+      UPDATE books
+      SET
+        status = @status,
+        borrower_name = NULL,
+        borrow_date = NULL
+      WHERE id = @id
+    `).run({
+      id: normalizedId,
+      status: STATUS_AVAILABLE
+    });
+
+    if (result.changes !== 1) {
+      throw new Error("Return operation failed.");
+    }
   });
 
+  runReturn();
   return { id: normalizedId, returned: true };
 }
 
@@ -329,3 +392,5 @@ module.exports = {
   returnBook,
   closeDatabase
 };
+
+
