@@ -179,105 +179,127 @@
     </main>
 
     <div id="bookModalOverlay" class="modal-overlay hidden" aria-hidden="true">
-      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="bookModalTitle">
+      <div class="modal-card modal-card-book" role="dialog" aria-modal="true" aria-labelledby="bookModalTitle" aria-describedby="bookModalLead">
+        <span class="modal-glow" aria-hidden="true"></span>
+
         <div class="modal-header">
-          <div>
-            <p class="modal-kicker">فرم اطلاعات کتاب</p>
-            <h3 id="bookModalTitle">افزودن کتاب</h3>
+          <div class="modal-header-main">
+            <p class="modal-kicker">مدیریت اطلاعات کتاب</p>
+            <h3 id="bookModalTitle">افزودن کتاب جدید</h3>
+            <p id="bookModalLead" class="modal-lead">اطلاعات زیر برای ثبت دقیق در فهرست کتابخانه استفاده می‌شود.</p>
           </div>
           <button id="closeBookModalBtn" class="icon-btn" type="button" aria-label="بستن">×</button>
         </div>
 
-        <form id="bookForm" class="modal-form">
+        <form id="bookForm" class="modal-form" novalidate>
           <input type="hidden" id="bookIdInput" />
 
-          <div class="form-grid">
-            <div class="form-field">
-              <label for="titleInput">عنوان کتاب</label>
-              <input id="titleInput" type="text" maxlength="120" required />
+          <div class="form-grid form-grid-book">
+            <div class="form-field" data-field="title">
+              <label for="titleInput"><span>عنوان کتاب</span><em>*</em></label>
+              <input id="titleInput" type="text" maxlength="120" placeholder="مثال: صد سال تنهایی" required />
+              <p id="titleInputError" class="field-error" aria-live="polite"></p>
             </div>
 
-            <div class="form-field">
-              <label for="authorInput">نویسنده</label>
-              <input id="authorInput" type="text" maxlength="120" required />
+            <div class="form-field" data-field="author">
+              <label for="authorInput"><span>نویسنده</span><em>*</em></label>
+              <input id="authorInput" type="text" maxlength="120" placeholder="مثال: گابریل گارسیا مارکز" required />
+              <p id="authorInputError" class="field-error" aria-live="polite"></p>
             </div>
 
-            <div class="form-field">
-              <label for="categoryInput">دسته‌بندی</label>
-              <input id="categoryInput" type="text" maxlength="80" />
+            <div class="form-field" data-field="category">
+              <label for="categoryInput"><span>دسته‌بندی</span></label>
+              <input id="categoryInput" type="text" maxlength="80" placeholder="داستان، تاریخ، علمی و ..." />
+              <p id="categoryInputError" class="field-error" aria-live="polite"></p>
             </div>
 
-            <div class="form-field">
-              <label for="publishYearInput">سال انتشار</label>
-              <input id="publishYearInput" type="number" min="1000" max="2100" />
+            <div class="form-field" data-field="publishYear">
+              <label for="publishYearInput"><span>سال انتشار</span></label>
+              <input id="publishYearInput" type="number" min="1000" max="2100" inputmode="numeric" placeholder="مثال: 1402" />
+              <p id="publishYearInputError" class="field-error" aria-live="polite"></p>
             </div>
 
-            <div class="form-field">
-              <label for="publisherInput">ناشر</label>
-              <input id="publisherInput" type="text" maxlength="120" />
+            <div class="form-field full-span" data-field="publisher">
+              <label for="publisherInput"><span>ناشر</span></label>
+              <input id="publisherInput" type="text" maxlength="120" placeholder="نام ناشر" />
+              <p id="publisherInputError" class="field-error" aria-live="polite"></p>
             </div>
           </div>
 
-          <div class="form-field full-width">
-            <label for="descriptionInput">توضیحات</label>
-            <textarea id="descriptionInput" rows="4" maxlength="500"></textarea>
+          <div class="form-field full-width" data-field="description">
+            <label for="descriptionInput"><span>توضیحات تکمیلی</span></label>
+            <textarea id="descriptionInput" rows="4" maxlength="500" placeholder="خلاصه یا توضیح کوتاه درباره کتاب"></textarea>
+            <p id="descriptionInputError" class="field-error" aria-live="polite"></p>
           </div>
+
+          <div id="bookFormNotice" class="form-notice hidden" aria-live="polite"></div>
 
           <div class="modal-actions">
-            <button id="saveBookBtn" type="submit" class="btn btn-primary">ذخیره</button>
-            <button id="cancelBookModalBtn" type="button" class="btn btn-light">انصراف</button>
+            <button id="saveBookBtn" type="submit" class="btn btn-primary">ذخیره کتاب</button>
+            <button id="cancelBookModalBtn" type="button" class="btn btn-soft">انصراف</button>
           </div>
         </form>
       </div>
     </div>
 
     <div id="borrowModalOverlay" class="modal-overlay hidden" aria-hidden="true">
-      <div class="modal-card borrow-modal" role="dialog" aria-modal="true" aria-labelledby="borrowModalTitle">
+      <div class="modal-card borrow-modal" role="dialog" aria-modal="true" aria-labelledby="borrowModalTitle" aria-describedby="borrowModalLead">
+        <span class="modal-glow" aria-hidden="true"></span>
+
         <div class="modal-header">
-          <div>
-            <p class="modal-kicker">فرم ثبت امانت</p>
-            <h3 id="borrowModalTitle">ثبت امانت کتاب</h3>
+          <div class="modal-header-main">
+            <p class="modal-kicker">ثبت امانت کتاب</p>
+            <h3 id="borrowModalTitle">ثبت امانت</h3>
+            <p id="borrowModalLead" class="modal-lead">پس از ثبت، وضعیت کتاب به «امانت داده شده» تغییر می‌کند.</p>
           </div>
           <button id="closeBorrowModalBtn" class="icon-btn" type="button" aria-label="بستن">×</button>
         </div>
 
-        <form id="borrowForm" class="modal-form">
+        <form id="borrowForm" class="modal-form borrow-form" novalidate>
           <input type="hidden" id="borrowBookIdInput" />
 
           <p id="borrowBookName" class="borrow-book-name"></p>
 
-          <div class="form-field">
-            <label for="borrowerNameInput">نام امانت‌گیرنده</label>
-            <input id="borrowerNameInput" type="text" maxlength="120" required />
+          <div class="form-field" data-field="borrowerName">
+            <label for="borrowerNameInput"><span>نام امانت‌گیرنده</span><em>*</em></label>
+            <input id="borrowerNameInput" type="text" maxlength="120" placeholder="نام و نام خانوادگی" required />
+            <p id="borrowerNameInputError" class="field-error" aria-live="polite"></p>
           </div>
 
-          <div class="form-field">
-            <label for="borrowDateInput">تاریخ امانت</label>
+          <div class="form-field" data-field="borrowDate">
+            <label for="borrowDateInput"><span>تاریخ امانت</span><em>*</em></label>
             <input id="borrowDateInput" type="date" required />
+            <p id="borrowDateInputError" class="field-error" aria-live="polite"></p>
           </div>
+
+          <div id="borrowFormNotice" class="form-notice hidden" aria-live="polite"></div>
 
           <div class="modal-actions">
             <button type="submit" class="btn btn-secondary">ثبت امانت</button>
-            <button id="cancelBorrowModalBtn" type="button" class="btn btn-light">انصراف</button>
+            <button id="cancelBorrowModalBtn" type="button" class="btn btn-soft">انصراف</button>
           </div>
         </form>
       </div>
     </div>
 
     <div id="dialogOverlay" class="modal-overlay hidden" aria-hidden="true">
-      <div class="dialog-card" role="alertdialog" aria-modal="true" aria-labelledby="dialogTitle">
-        <div id="dialogIcon" class="dialog-icon">i</div>
-        <h3 id="dialogTitle">عنوان پیام</h3>
-        <p id="dialogMessage">متن پیام</p>
+      <div class="dialog-card dialog-card-info" role="alertdialog" aria-modal="true" aria-labelledby="dialogTitle" aria-describedby="dialogMessage">
+        <div class="dialog-head">
+          <div id="dialogIcon" class="dialog-icon">i</div>
+          <div>
+            <h3 id="dialogTitle">عنوان پیام</h3>
+            <p id="dialogMessage" class="dialog-message">متن پیام</p>
+          </div>
+        </div>
         <div class="dialog-actions">
           <button id="dialogConfirmBtn" type="button" class="btn btn-primary">تایید</button>
-          <button id="dialogCancelBtn" type="button" class="btn btn-light hidden">انصراف</button>
+          <button id="dialogCancelBtn" type="button" class="btn btn-soft hidden">انصراف</button>
         </div>
       </div>
     </div>
-
     <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
     <script src="./app.js"></script>
   </body>
 </html>
+

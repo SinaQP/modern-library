@@ -1141,3 +1141,531 @@ tbody tr.selected td:first-child {
     max-width: unset;
   }
 }
+
+/* ===== Modal and Form Redesign ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  padding: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(560px 300px at 15% -8%, rgba(44, 94, 169, 0.26) 0%, transparent 72%),
+    radial-gradient(520px 280px at 88% 110%, rgba(9, 132, 118, 0.19) 0%, transparent 74%),
+    rgba(12, 20, 38, 0.62);
+  backdrop-filter: blur(9px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 260ms ease;
+}
+
+.modal-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-overlay.is-closing {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modal-card,
+.dialog-card {
+  position: relative;
+  overflow: hidden;
+  width: min(780px, 100%);
+  border-radius: 26px;
+  border: 1px solid rgba(208, 221, 243, 0.92);
+  background:
+    linear-gradient(170deg, rgba(255, 255, 255, 0.99) 0%, rgba(247, 251, 255, 0.98) 100%);
+  box-shadow:
+    0 34px 78px rgba(10, 20, 38, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transform: translateY(22px) scale(0.96);
+  opacity: 0;
+  transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 250ms ease;
+  direction: rtl;
+  text-align: right;
+}
+
+.modal-overlay.is-open .modal-card,
+.modal-overlay.is-open .dialog-card {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+.modal-overlay.is-closing .modal-card,
+.modal-overlay.is-closing .dialog-card {
+  transform: translateY(14px) scale(0.98);
+  opacity: 0;
+}
+
+.modal-glow {
+  position: absolute;
+  pointer-events: none;
+  width: 280px;
+  height: 280px;
+  top: -156px;
+  inset-inline-start: -86px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(56, 106, 184, 0.2) 0%, rgba(56, 106, 184, 0) 72%);
+}
+
+.modal-card-book {
+  max-width: 820px;
+}
+
+.borrow-modal {
+  max-width: 580px;
+}
+
+.modal-header {
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid #e3ebfa;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.modal-header-main {
+  display: grid;
+  gap: 6px;
+}
+
+.modal-kicker {
+  margin: 0;
+  color: #5474a8;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.15px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #1d3665;
+  font-size: 1.2rem;
+  line-height: 1.5;
+}
+
+.modal-lead {
+  margin: 0;
+  color: #667a9f;
+  font-size: 0.86rem;
+  line-height: 1.9;
+}
+
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  border-radius: 12px;
+  border: 1px solid #d4dff1;
+  background: linear-gradient(180deg, #f7faff 0%, #ecf2ff 100%);
+  color: #355788;
+  cursor: pointer;
+  font-size: 1.4rem;
+  line-height: 1;
+  transition: transform var(--transition), border-color var(--transition), background var(--transition), box-shadow var(--transition);
+}
+
+.icon-btn:hover {
+  transform: translateY(-1px);
+  border-color: #b9cbea;
+  background: linear-gradient(180deg, #f3f8ff 0%, #e7efff 100%);
+  box-shadow: 0 6px 14px rgba(45, 84, 149, 0.18);
+}
+
+.modal-form {
+  padding: 18px 24px 24px;
+  display: grid;
+  gap: 14px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.form-grid-book .full-span {
+  grid-column: 1 / -1;
+}
+
+.form-field {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.form-field label {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #5f7399;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.form-field label em {
+  color: #b63b5b;
+  font-style: normal;
+  font-size: 0.95rem;
+}
+
+.form-field input,
+.form-field textarea {
+  width: 100%;
+  border-radius: 13px;
+  border: 1px solid #cfdaee;
+  background: linear-gradient(180deg, #ffffff 0%, #fafdff 100%);
+  padding: 12px 13px;
+  font-size: 0.92rem;
+  color: #1f3356;
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition), transform var(--transition);
+}
+
+.form-field input:hover,
+.form-field textarea:hover {
+  border-color: #b9cceb;
+}
+
+.form-field input:focus,
+.form-field textarea:focus {
+  border-color: #6b95d6;
+  box-shadow: 0 0 0 3px rgba(58, 106, 183, 0.14);
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.form-field.has-error input,
+.form-field.has-error textarea {
+  border-color: #d55c78;
+  background: linear-gradient(180deg, #fff7f9 0%, #fff2f5 100%);
+  box-shadow: 0 0 0 3px rgba(197, 66, 95, 0.14);
+}
+
+.form-field.has-error label span {
+  color: #a73853;
+}
+
+.form-field.has-valid input,
+.form-field.has-valid textarea {
+  border-color: #75bda8;
+  box-shadow: 0 0 0 3px rgba(9, 132, 118, 0.12);
+}
+
+.field-error {
+  margin: 0;
+  min-height: 1.1rem;
+  color: #b73f5d;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.65;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.form-field.has-error .field-error {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.form-notice {
+  border-radius: 12px;
+  border: 1px solid #e0e7f7;
+  background: #f4f8ff;
+  color: #3f5f93;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.8;
+  padding: 10px 12px;
+}
+
+.form-notice.notice-error {
+  border-color: #f0c8d3;
+  background: #fff0f5;
+  color: #a93a56;
+}
+
+.form-notice.notice-success {
+  border-color: #bfe5d8;
+  background: #eaf9f3;
+  color: #0f6f61;
+}
+
+.modal-actions {
+  margin-top: 4px;
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.modal-actions .btn {
+  min-height: 46px;
+  min-width: 126px;
+}
+
+.btn-soft {
+  color: #3a5787;
+  border-color: #cedcf3;
+  background: linear-gradient(180deg, #f4f8ff 0%, #eaf1ff 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.btn-soft:hover:not(:disabled) {
+  border-color: #afc6e8;
+  background: linear-gradient(180deg, #eef5ff 0%, #e4edff 100%);
+}
+
+.borrow-form {
+  gap: 12px;
+}
+
+.borrow-book-name {
+  margin: 2px 0 2px;
+  border-radius: 14px;
+  border: 1px solid #cbdaf5;
+  background:
+    radial-gradient(220px 80px at 8% -55%, rgba(63, 113, 192, 0.21) 0%, transparent 70%),
+    linear-gradient(180deg, #f4f8ff 0%, #ecf2ff 100%);
+  color: #2f4f85;
+  font-size: 0.89rem;
+  font-weight: 700;
+  line-height: 1.9;
+  padding: 11px 13px;
+}
+
+.dialog-card {
+  max-width: 500px;
+  padding: 22px;
+}
+
+.dialog-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.dialog-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  font-size: 1.35rem;
+  font-weight: 900;
+  background: #e7efff;
+  color: #305a9c;
+  border: 1px solid #cadefb;
+}
+
+.dialog-card h3 {
+  margin: 2px 0 8px;
+  color: #1f3561;
+  font-size: 1.08rem;
+}
+
+.dialog-message {
+  margin: 0;
+  color: #5f759a;
+  line-height: 1.95;
+  font-size: 0.9rem;
+}
+
+.dialog-card-warning .dialog-icon {
+  background: #fff4e4;
+  color: #a56a1f;
+  border-color: #f4d6ae;
+}
+
+.dialog-card-warning .dialog-message {
+  color: #7b643e;
+}
+
+.dialog-card-danger .dialog-icon {
+  background: #ffe9ef;
+  color: #ad3652;
+  border-color: #f5c5d1;
+}
+
+.dialog-card-danger .dialog-message {
+  color: #7c4554;
+}
+
+.dialog-card-success .dialog-icon {
+  background: #e7f8f1;
+  color: #0e7465;
+  border-color: #bde5d9;
+}
+
+.dialog-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.dialog-actions .btn {
+  min-width: 116px;
+}
+
+.toast-container {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 55;
+  display: grid;
+  gap: 10px;
+  width: min(400px, calc(100% - 28px));
+}
+
+.toast {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  color: #fff;
+  box-shadow: 0 20px 36px rgba(11, 21, 40, 0.3);
+  animation: toast-rise 280ms ease;
+}
+
+.toast-inner {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 11px 12px 12px;
+}
+
+.toast-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+  font-weight: 900;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.toast-title {
+  margin: 0;
+  font-size: 0.83rem;
+  font-weight: 800;
+  opacity: 0.96;
+}
+
+.toast-message {
+  margin: 2px 0 0;
+  font-size: 0.84rem;
+  line-height: 1.75;
+  font-weight: 600;
+  opacity: 0.96;
+}
+
+.toast-progress {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  bottom: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.3);
+  transform-origin: right center;
+  animation: toast-progress 2600ms linear forwards;
+}
+
+.toast.success {
+  border-color: #0e826f;
+  background: linear-gradient(135deg, #0a8b76 0%, #056a5c 100%);
+}
+
+.toast.error {
+  border-color: #c44764;
+  background: linear-gradient(135deg, #c24361 0%, #9f2f4a 100%);
+}
+
+.toast.info {
+  border-color: #3f6fbb;
+  background: linear-gradient(135deg, #2f62b0 0%, #214984 100%);
+}
+
+.toast.warning {
+  border-color: #c48831;
+  background: linear-gradient(135deg, #c7903b 0%, #9f6f1f 100%);
+}
+
+@keyframes toast-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@media (max-width: 980px) {
+  .modal-overlay {
+    padding: 14px;
+  }
+
+  .modal-card,
+  .dialog-card {
+    border-radius: 18px;
+  }
+
+  .modal-header {
+    padding: 18px 16px 14px;
+  }
+
+  .modal-form {
+    padding: 14px 16px 16px;
+    gap: 12px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .dialog-card {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 620px) {
+  .modal-actions,
+  .dialog-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .modal-actions .btn,
+  .dialog-actions .btn {
+    flex: 1 1 100%;
+  }
+
+  .toast-container {
+    right: 10px;
+    left: 10px;
+    bottom: 10px;
+    width: auto;
+  }
+}

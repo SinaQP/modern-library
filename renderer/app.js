@@ -1,5 +1,6 @@
 const STATUS_AVAILABLE = "موجود";
 const STATUS_BORROWED = "امانت داده شده";
+const OVERLAY_CLOSE_MS = 280;
 
 const state = {
   books: [],
@@ -15,6 +16,7 @@ const dom = {};
 document.addEventListener("DOMContentLoaded", () => {
   cacheDom();
   bindEvents();
+  bindFormFieldValidation();
   updateActionButtons();
   setDefaultBorrowDate();
   refreshData();
@@ -46,6 +48,7 @@ function cacheDom() {
   dom.cancelBookModalBtn = document.getElementById("cancelBookModalBtn");
   dom.saveBookBtn = document.getElementById("saveBookBtn");
   dom.bookForm = document.getElementById("bookForm");
+  dom.bookFormNotice = document.getElementById("bookFormNotice");
   dom.bookIdInput = document.getElementById("bookIdInput");
   dom.titleInput = document.getElementById("titleInput");
   dom.authorInput = document.getElementById("authorInput");
@@ -56,6 +59,7 @@ function cacheDom() {
 
   dom.borrowModalOverlay = document.getElementById("borrowModalOverlay");
   dom.borrowForm = document.getElementById("borrowForm");
+  dom.borrowFormNotice = document.getElementById("borrowFormNotice");
   dom.borrowBookIdInput = document.getElementById("borrowBookIdInput");
   dom.borrowBookName = document.getElementById("borrowBookName");
   dom.borrowerNameInput = document.getElementById("borrowerNameInput");
@@ -64,6 +68,7 @@ function cacheDom() {
   dom.cancelBorrowModalBtn = document.getElementById("cancelBorrowModalBtn");
 
   dom.dialogOverlay = document.getElementById("dialogOverlay");
+  dom.dialogCard = dom.dialogOverlay.querySelector(".dialog-card");
   dom.dialogIcon = document.getElementById("dialogIcon");
   dom.dialogTitle = document.getElementById("dialogTitle");
   dom.dialogMessage = document.getElementById("dialogMessage");
@@ -136,6 +141,67 @@ function bindEvents() {
   });
 }
 
+function bindFormFieldValidation() {
+  bindFieldValidation(dom.titleInput, () => {
+    if (!dom.titleInput.value.trim()) {
+      return "عنوان کتاب را وارد کنید.";
+    }
+    return "";
+  });
+
+  bindFieldValidation(dom.authorInput, () => {
+    if (!dom.authorInput.value.trim()) {
+      return "نام نویسنده الزامی است.";
+    }
+    return "";
+  });
+
+  bindFieldValidation(dom.publishYearInput, () => validatePublishYear(dom.publishYearInput.value.trim()));
+
+  bindFieldValidation(dom.borrowerNameInput, () => {
+    const value = dom.borrowerNameInput.value.trim();
+    if (!value) {
+      return "نام امانت‌گیرنده را وارد کنید.";
+    }
+    if (value.length < 3) {
+      return "نام امانت‌گیرنده باید حداقل ۳ کاراکتر باشد.";
+    }
+    return "";
+  });
+
+  bindFieldValidation(dom.borrowDateInput, () => {
+    if (!dom.borrowDateInput.value) {
+      return "تاریخ امانت را مشخص کنید.";
+    }
+    return "";
+  });
+}
+
+function bindFieldValidation(input, validator) {
+  if (!input || typeof validator !== "function") {
+    return;
+  }
+
+  input.addEventListener("input", () => {
+    clearFormNotice(input.form === dom.bookForm ? dom.bookFormNotice : dom.borrowFormNotice);
+    const message = validator();
+    if (message) {
+      setFieldError(input, message);
+      return;
+    }
+    setFieldValid(input);
+  });
+
+  input.addEventListener("blur", () => {
+    const message = validator();
+    if (message) {
+      setFieldError(input, message);
+      return;
+    }
+    setFieldValid(input);
+  });
+}
+
 async function refreshData() {
   try {
     const filters = {
@@ -176,8 +242,7 @@ function renderSummary(summary) {
 function renderTable() {
   dom.booksTableBody.innerHTML = "";
 
-  const bookCountText = `${toPersianDigits(state.books.length)} کتاب ثبت‌شده`;
-  dom.tableCountText.textContent = bookCountText;
+  dom.tableCountText.textContent = `${toPersianDigits(state.books.length)} کتاب ثبت‌شده`;
 
   if (state.books.length === 0) {
     dom.emptyState.classList.remove("hidden");
@@ -252,6 +317,7 @@ function openAddBookModal() {
   dom.saveBookBtn.textContent = "ذخیره کتاب";
   dom.bookForm.reset();
   dom.bookIdInput.value = "";
+  clearFormValidation(dom.bookForm, dom.bookFormNotice);
   openOverlay(dom.bookModalOverlay);
   dom.titleInput.focus();
 }
@@ -274,12 +340,15 @@ async function openEditBookModal() {
   dom.publisherInput.value = selectedBook.publisher || "";
   dom.descriptionInput.value = selectedBook.description || "";
 
+  clearFormValidation(dom.bookForm, dom.bookFormNotice);
   openOverlay(dom.bookModalOverlay);
   dom.titleInput.focus();
 }
 
 async function onSubmitBookForm(event) {
   event.preventDefault();
+
+  clearFormValidation(dom.bookForm, dom.bookFormNotice);
 
   const title = dom.titleInput.value.trim();
   const author = dom.authorInput.value.trim();
@@ -288,41 +357,39 @@ async function onSubmitBookForm(event) {
   const publisher = dom.publisherInput.value.trim();
   const description = dom.descriptionInput.value.trim();
 
+  const errors = [];
+
   if (!title) {
-    await showDialog({
-      title: "اعتبارسنجی اطلاعات",
-      message: "وارد کردن عنوان کتاب الزامی است.",
-      type: "warning",
-      confirmText: "متوجه شدم"
-    });
-    dom.titleInput.focus();
-    return;
+    errors.push({ input: dom.titleInput, message: "عنوان کتاب را وارد کنید." });
   }
 
   if (!author) {
-    await showDialog({
-      title: "اعتبارسنجی اطلاعات",
-      message: "وارد کردن نام نویسنده الزامی است.",
+    errors.push({ input: dom.authorInput, message: "نام نویسنده را وارد کنید." });
+  }
+
+  const yearError = validatePublishYear(publishYearRaw);
+  if (yearError) {
+    errors.push({ input: dom.publishYearInput, message: yearError });
+  }
+
+  if (errors.length > 0) {
+    errors.forEach(({ input, message }) => setFieldError(input, message));
+    showFormNotice(dom.bookFormNotice, "لطفا خطاهای مشخص‌شده را اصلاح کنید و دوباره تلاش کنید.", "error");
+    const firstInput = errors[0]?.input;
+    if (firstInput) {
+      firstInput.focus();
+    }
+    showToast({
       type: "warning",
-      confirmText: "متوجه شدم"
+      title: "نیاز به اصلاح فرم",
+      message: "پیش از ذخیره، موارد الزامی را کامل کنید."
     });
-    dom.authorInput.focus();
     return;
   }
 
-  if (publishYearRaw) {
-    const year = Number(publishYearRaw);
-    if (!Number.isInteger(year) || year < 1000 || year > 2100) {
-      await showDialog({
-        title: "اعتبارسنجی اطلاعات",
-        message: "سال انتشار باید عددی معتبر بین 1000 تا 2100 باشد.",
-        type: "warning",
-        confirmText: "متوجه شدم"
-      });
-      dom.publishYearInput.focus();
-      return;
-    }
-  }
+  [dom.titleInput, dom.authorInput, dom.publishYearInput]
+    .filter((input) => input.value.trim())
+    .forEach(setFieldValid);
 
   const payload = {
     title,
@@ -333,25 +400,39 @@ async function onSubmitBookForm(event) {
     description
   };
 
+  const defaultSubmitText = dom.saveBookBtn.textContent;
+  setButtonBusy(dom.saveBookBtn, true, state.bookModalMode === "add" ? "در حال ذخیره..." : "در حال ثبت تغییرات...");
+
   try {
     if (state.bookModalMode === "add") {
       await window.libraryAPI.addBook(payload);
-      showToast("کتاب با موفقیت ثبت شد.", "success");
+      showToast({
+        type: "success",
+        title: "ثبت موفق",
+        message: "کتاب جدید با موفقیت به کتابخانه اضافه شد."
+      });
     } else {
       payload.id = Number(dom.bookIdInput.value);
       await window.libraryAPI.updateBook(payload);
-      showToast("اطلاعات کتاب با موفقیت ویرایش شد.", "success");
+      showToast({
+        type: "success",
+        title: "ویرایش موفق",
+        message: "اطلاعات کتاب با موفقیت به‌روزرسانی شد."
+      });
     }
 
     closeOverlay(dom.bookModalOverlay);
     await refreshData();
   } catch (error) {
+    showFormNotice(dom.bookFormNotice, "ثبت اطلاعات انجام نشد. لطفا دوباره تلاش کنید.", "error");
     await showDialog({
       title: "خطا در ثبت اطلاعات",
       message: getFriendlyError(error),
       type: "danger",
       confirmText: "متوجه شدم"
     });
+  } finally {
+    setButtonBusy(dom.saveBookBtn, false, defaultSubmitText);
   }
 }
 
@@ -363,7 +444,7 @@ async function onDeleteBook() {
 
   const confirmed = await showDialog({
     title: "تایید حذف کتاب",
-    message: `آیا از حذف کتاب «${selectedBook.title}» مطمئن هستید؟`,
+    message: `آیا از حذف کتاب «${selectedBook.title}» مطمئن هستید؟ این عملیات قابل بازگشت نیست.`,
     type: "warning",
     confirmText: "حذف شود",
     cancelText: "انصراف",
@@ -378,7 +459,11 @@ async function onDeleteBook() {
     await window.libraryAPI.deleteBook(selectedBook.id);
     state.selectedBookId = null;
     await refreshData();
-    showToast("کتاب با موفقیت حذف شد.", "success");
+    showToast({
+      type: "success",
+      title: "حذف انجام شد",
+      message: "کتاب انتخاب‌شده از فهرست حذف شد."
+    });
   } catch (error) {
     await showDialog({
       title: "خطا در حذف کتاب",
@@ -397,8 +482,8 @@ async function openBorrowModalFromSelection() {
 
   if (selectedBook.status !== STATUS_AVAILABLE) {
     await showDialog({
-      title: "ثبت امانت",
-      message: "این کتاب در حال حاضر موجود نیست و امکان ثبت امانت جدید ندارد.",
+      title: "امکان ثبت امانت وجود ندارد",
+      message: "این کتاب هم‌اکنون در وضعیت امانت است و نمی‌توان امانت جدید ثبت کرد.",
       type: "warning",
       confirmText: "متوجه شدم"
     });
@@ -406,9 +491,10 @@ async function openBorrowModalFromSelection() {
   }
 
   dom.borrowForm.reset();
+  clearFormValidation(dom.borrowForm, dom.borrowFormNotice);
   setDefaultBorrowDate();
   dom.borrowBookIdInput.value = String(selectedBook.id);
-  dom.borrowBookName.textContent = `کتاب انتخاب‌شده: ${selectedBook.title}`;
+  dom.borrowBookName.textContent = `کتاب انتخاب‌شده: «${selectedBook.title}»`;
 
   openOverlay(dom.borrowModalOverlay);
   dom.borrowerNameInput.focus();
@@ -417,31 +503,45 @@ async function openBorrowModalFromSelection() {
 async function onSubmitBorrowForm(event) {
   event.preventDefault();
 
+  clearFormValidation(dom.borrowForm, dom.borrowFormNotice);
+
   const borrowerName = dom.borrowerNameInput.value.trim();
   const borrowDate = dom.borrowDateInput.value;
   const selectedBookId = Number(dom.borrowBookIdInput.value);
 
+  const errors = [];
+
   if (!borrowerName) {
-    await showDialog({
-      title: "اعتبارسنجی اطلاعات",
-      message: "وارد کردن نام امانت‌گیرنده الزامی است.",
-      type: "warning",
-      confirmText: "متوجه شدم"
-    });
-    dom.borrowerNameInput.focus();
-    return;
+    errors.push({ input: dom.borrowerNameInput, message: "نام امانت‌گیرنده را وارد کنید." });
+  } else if (borrowerName.length < 3) {
+    errors.push({ input: dom.borrowerNameInput, message: "نام امانت‌گیرنده باید حداقل ۳ کاراکتر باشد." });
   }
 
   if (!borrowDate) {
-    await showDialog({
-      title: "اعتبارسنجی اطلاعات",
-      message: "تاریخ امانت را مشخص کنید.",
+    errors.push({ input: dom.borrowDateInput, message: "تاریخ امانت را مشخص کنید." });
+  }
+
+  if (errors.length > 0) {
+    errors.forEach(({ input, message }) => setFieldError(input, message));
+    showFormNotice(dom.borrowFormNotice, "برای ثبت امانت، تکمیل تمام فیلدهای الزامی ضروری است.", "error");
+    const firstInput = errors[0]?.input;
+    if (firstInput) {
+      firstInput.focus();
+    }
+    showToast({
       type: "warning",
-      confirmText: "متوجه شدم"
+      title: "فرم ناقص است",
+      message: "لطفا اطلاعات امانت را کامل کنید."
     });
-    dom.borrowDateInput.focus();
     return;
   }
+
+  setFieldValid(dom.borrowerNameInput);
+  setFieldValid(dom.borrowDateInput);
+
+  const submitBtn = dom.borrowForm.querySelector('button[type="submit"]');
+  const defaultSubmitText = submitBtn.textContent;
+  setButtonBusy(submitBtn, true, "در حال ثبت...");
 
   try {
     await window.libraryAPI.borrowBook({
@@ -452,14 +552,21 @@ async function onSubmitBorrowForm(event) {
 
     closeOverlay(dom.borrowModalOverlay);
     await refreshData();
-    showToast("اطلاعات امانت با موفقیت ثبت شد.", "success");
+    showToast({
+      type: "success",
+      title: "امانت ثبت شد",
+      message: "اطلاعات امانت کتاب با موفقیت ثبت گردید."
+    });
   } catch (error) {
+    showFormNotice(dom.borrowFormNotice, "ثبت امانت انجام نشد. لطفا دوباره تلاش کنید.", "error");
     await showDialog({
       title: "خطا در ثبت امانت",
       message: getFriendlyError(error),
       type: "danger",
       confirmText: "متوجه شدم"
     });
+  } finally {
+    setButtonBusy(submitBtn, false, defaultSubmitText);
   }
 }
 
@@ -471,8 +578,8 @@ async function onReturnBook() {
 
   if (selectedBook.status !== STATUS_BORROWED) {
     await showDialog({
-      title: "بازگردانی کتاب",
-      message: "این کتاب در وضعیت امانت نیست.",
+      title: "بازگردانی امکان‌پذیر نیست",
+      message: "این کتاب در وضعیت امانت قرار ندارد.",
       type: "warning",
       confirmText: "متوجه شدم"
     });
@@ -481,7 +588,7 @@ async function onReturnBook() {
 
   const confirmed = await showDialog({
     title: "تایید بازگردانی",
-    message: `بازگردانی کتاب «${selectedBook.title}» ثبت شود؟`,
+    message: `آیا بازگردانی کتاب «${selectedBook.title}» ثبت شود؟`,
     type: "info",
     confirmText: "ثبت بازگردانی",
     cancelText: "انصراف",
@@ -495,7 +602,11 @@ async function onReturnBook() {
   try {
     await window.libraryAPI.returnBook(selectedBook.id);
     await refreshData();
-    showToast("کتاب با موفقیت بازگردانی شد.", "success");
+    showToast({
+      type: "success",
+      title: "بازگردانی ثبت شد",
+      message: "وضعیت کتاب به «موجود» تغییر کرد."
+    });
   } catch (error) {
     await showDialog({
       title: "خطا در بازگردانی",
@@ -511,7 +622,7 @@ async function requireSelection() {
   if (!selectedBook) {
     await showDialog({
       title: "انتخاب کتاب",
-      message: "ابتدا یک ردیف از جدول کتاب‌ها را انتخاب کنید.",
+      message: "ابتدا یک کتاب از جدول انتخاب کنید، سپس عملیات موردنظر را انجام دهید.",
       type: "warning",
       confirmText: "متوجه شدم"
     });
@@ -533,7 +644,7 @@ function onSearchInput() {
 
 function openOverlay(overlay) {
   clearOverlayTimer(overlay);
-  overlay.classList.remove("hidden");
+  overlay.classList.remove("hidden", "is-closing");
   requestAnimationFrame(() => {
     overlay.classList.add("is-open");
     overlay.setAttribute("aria-hidden", "false");
@@ -543,12 +654,14 @@ function openOverlay(overlay) {
 function closeOverlay(overlay) {
   clearOverlayTimer(overlay);
   overlay.classList.remove("is-open");
+  overlay.classList.add("is-closing");
   overlay.setAttribute("aria-hidden", "true");
 
   const timer = setTimeout(() => {
     overlay.classList.add("hidden");
+    overlay.classList.remove("is-closing");
     state.overlayTimers.delete(overlay);
-  }, 180);
+  }, OVERLAY_CLOSE_MS);
 
   state.overlayTimers.set(overlay, timer);
 }
@@ -583,6 +696,15 @@ function showDialog(options = {}) {
       cancelable = false
     } = options;
 
+    const dialogTypes = {
+      info: { icon: "i", className: "dialog-card-info", buttonClass: "btn-primary" },
+      warning: { icon: "!", className: "dialog-card-warning", buttonClass: "btn-primary" },
+      danger: { icon: "×", className: "dialog-card-danger", buttonClass: "btn-danger" },
+      success: { icon: "✓", className: "dialog-card-success", buttonClass: "btn-secondary" }
+    };
+
+    const style = dialogTypes[type] || dialogTypes.info;
+
     dom.dialogTitle.textContent = title;
     dom.dialogMessage.textContent = message;
     dom.dialogConfirmBtn.textContent = confirmText;
@@ -590,22 +712,25 @@ function showDialog(options = {}) {
     dom.dialogOverlay.dataset.cancelable = cancelable ? "yes" : "no";
     dom.dialogCancelBtn.classList.toggle("hidden", !cancelable);
 
-    if (type === "danger") {
-      dom.dialogIcon.textContent = "×";
-      dom.dialogIcon.style.background = "#ffe6ec";
-      dom.dialogIcon.style.color = "#b33a53";
-    } else if (type === "warning") {
-      dom.dialogIcon.textContent = "!";
-      dom.dialogIcon.style.background = "#fff1dc";
-      dom.dialogIcon.style.color = "#b36f1f";
-    } else {
-      dom.dialogIcon.textContent = "i";
-      dom.dialogIcon.style.background = "#e9f0ff";
-      dom.dialogIcon.style.color = "#28529c";
-    }
+    dom.dialogCard.classList.remove(
+      "dialog-card-info",
+      "dialog-card-warning",
+      "dialog-card-danger",
+      "dialog-card-success"
+    );
+    dom.dialogCard.classList.add(style.className);
+
+    dom.dialogConfirmBtn.classList.remove("btn-primary", "btn-secondary", "btn-danger");
+    dom.dialogConfirmBtn.classList.add(style.buttonClass);
+
+    dom.dialogIcon.textContent = style.icon;
 
     state.dialogResolver = resolve;
     openOverlay(dom.dialogOverlay);
+
+    setTimeout(() => {
+      dom.dialogConfirmBtn.focus();
+    }, 20);
   });
 }
 
@@ -620,17 +745,172 @@ function resolveDialog(result) {
   resolver(result);
 }
 
-function showToast(message, type = "info") {
-  const toast = document.createElement("div");
+function showToast(input, fallbackType = "info") {
+  const payload =
+    typeof input === "string"
+      ? { message: input, type: fallbackType }
+      : {
+          type: input?.type || fallbackType,
+          title: input?.title,
+          message: input?.message || "",
+          duration: input?.duration
+        };
+
+  const type = payload.type === "danger" ? "error" : payload.type;
+  const meta = getToastMeta(type);
+  const toast = document.createElement("article");
   toast.className = `toast ${type}`;
-  toast.textContent = message;
+
+  const inner = document.createElement("div");
+  inner.className = "toast-inner";
+
+  const icon = document.createElement("span");
+  icon.className = "toast-icon";
+  icon.textContent = meta.icon;
+
+  const content = document.createElement("div");
+
+  const title = document.createElement("p");
+  title.className = "toast-title";
+  title.textContent = payload.title || meta.title;
+
+  const message = document.createElement("p");
+  message.className = "toast-message";
+  message.textContent = payload.message;
+
+  content.appendChild(title);
+  content.appendChild(message);
+  inner.appendChild(icon);
+  inner.appendChild(content);
+
+  const progress = document.createElement("span");
+  progress.className = "toast-progress";
+
+  toast.appendChild(inner);
+  toast.appendChild(progress);
   dom.toastContainer.appendChild(toast);
+
+  const duration = Number(payload.duration) > 1200 ? Number(payload.duration) : 2600;
+  progress.style.animationDuration = `${duration}ms`;
 
   setTimeout(() => {
     toast.style.opacity = "0";
-    toast.style.transform = "translateY(8px)";
+    toast.style.transform = "translateY(10px) scale(0.98)";
     setTimeout(() => toast.remove(), 220);
-  }, 2500);
+  }, duration);
+}
+
+function getToastMeta(type) {
+  if (type === "success") {
+    return { icon: "✓", title: "موفق" };
+  }
+  if (type === "error" || type === "danger") {
+    return { icon: "×", title: "خطا" };
+  }
+  if (type === "warning") {
+    return { icon: "!", title: "هشدار" };
+  }
+  return { icon: "i", title: "اطلاع" };
+}
+
+function setButtonBusy(button, busy, busyText = "") {
+  if (!button) {
+    return;
+  }
+
+  button.disabled = busy;
+  if (busy && busyText) {
+    button.textContent = busyText;
+  }
+}
+
+function clearFormValidation(form, noticeElement) {
+  if (!form) {
+    return;
+  }
+
+  form.querySelectorAll(".form-field").forEach((field) => {
+    field.classList.remove("has-error", "has-valid");
+  });
+
+  form.querySelectorAll(".field-error").forEach((node) => {
+    node.textContent = "";
+  });
+
+  clearFormNotice(noticeElement);
+}
+
+function setFieldError(input, message) {
+  const field = input?.closest(".form-field");
+  const errorNode = document.getElementById(`${input.id}Error`);
+
+  if (field) {
+    field.classList.add("has-error");
+    field.classList.remove("has-valid");
+  }
+
+  if (errorNode) {
+    errorNode.textContent = message;
+  }
+
+  input?.setAttribute("aria-invalid", "true");
+}
+
+function setFieldValid(input) {
+  if (!input) {
+    return;
+  }
+
+  const field = input.closest(".form-field");
+  const errorNode = document.getElementById(`${input.id}Error`);
+
+  if (field) {
+    field.classList.remove("has-error");
+    field.classList.add("has-valid");
+  }
+
+  if (errorNode) {
+    errorNode.textContent = "";
+  }
+
+  input.removeAttribute("aria-invalid");
+}
+
+function showFormNotice(noticeElement, message, type = "error") {
+  if (!noticeElement) {
+    return;
+  }
+
+  noticeElement.textContent = message;
+  noticeElement.classList.remove("hidden", "notice-error", "notice-success");
+  if (type === "success") {
+    noticeElement.classList.add("notice-success");
+    return;
+  }
+  noticeElement.classList.add("notice-error");
+}
+
+function clearFormNotice(noticeElement) {
+  if (!noticeElement) {
+    return;
+  }
+
+  noticeElement.textContent = "";
+  noticeElement.classList.add("hidden");
+  noticeElement.classList.remove("notice-error", "notice-success");
+}
+
+function validatePublishYear(rawValue) {
+  if (!rawValue) {
+    return "";
+  }
+
+  const year = Number(rawValue);
+  if (!Number.isInteger(year) || year < 1000 || year > 2100) {
+    return `سال انتشار باید یک عدد صحیح بین ${toPersianDigits(1000)} تا ${toPersianDigits(2100)} باشد.`;
+  }
+
+  return "";
 }
 
 function formatBorrowDate(value) {
@@ -660,7 +940,7 @@ function toPersianDigits(value) {
 }
 
 function getFriendlyError(error) {
-  const text = error?.message || "خطای ناشناخته رخ داده است.";
+  const text = error?.message || "خطای ناشناخته‌ای رخ داده است.";
   const match = text.match(/Error invoking remote method '[^']+': (.+)$/);
   if (match && match[1]) {
     return match[1];
