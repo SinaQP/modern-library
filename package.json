@@ -1,0 +1,27 @@
+{
+  "name": "personal-library-management-fa",
+  "version": "1.0.0",
+  "description": "سامانه مدیریت کتابخانه شخصی و ثبت امانت کتاب با Electron و SQLite",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check main.js && node --check preload.js && node --check database/db.js && node --check renderer/app.js",
+    "rebuild": "electron-rebuild -f -w better-sqlite3"
+  },
+  "keywords": [
+    "electron",
+    "sqlite",
+    "persian",
+    "rtl",
+    "library-management"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^9.6.0"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^3.6.0",
+    "electron": "^30.5.1"
+  }
+}
