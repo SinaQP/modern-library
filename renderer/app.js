@@ -176,7 +176,7 @@ function renderSummary(summary) {
 function renderTable() {
   dom.booksTableBody.innerHTML = "";
 
-  const bookCountText = `${toPersianDigits(state.books.length)} کتاب در فهرست`;
+  const bookCountText = `${toPersianDigits(state.books.length)} کتاب ثبت‌شده`;
   dom.tableCountText.textContent = bookCountText;
 
   if (state.books.length === 0) {
@@ -408,7 +408,7 @@ async function openBorrowModalFromSelection() {
   dom.borrowForm.reset();
   setDefaultBorrowDate();
   dom.borrowBookIdInput.value = String(selectedBook.id);
-  dom.borrowBookName.textContent = `کتاب انتخاب شده: ${selectedBook.title}`;
+  dom.borrowBookName.textContent = `کتاب انتخاب‌شده: ${selectedBook.title}`;
 
   openOverlay(dom.borrowModalOverlay);
   dom.borrowerNameInput.focus();
@@ -575,10 +575,10 @@ function showDialog(options = {}) {
     }
 
     const {
-      title = "پیام",
+      title = "پیام سامانه",
       message = "",
       type = "info",
-      confirmText = "باشه",
+      confirmText = "تایید",
       cancelText = "انصراف",
       cancelable = false
     } = options;

@@ -1,5 +1,5 @@
-﻿<!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<!DOCTYPE html>
+<html lang="fa-IR" dir="rtl">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,7 +10,7 @@
     <title>سامانه مدیریت کتابخانه شخصی و ثبت امانت کتاب</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
-  <body>
+  <body dir="rtl">
     <div class="backdrop" aria-hidden="true">
       <span class="mesh mesh-one"></span>
       <span class="mesh mesh-two"></span>
@@ -31,15 +31,15 @@
           <span class="project-badge">مناسب برای ارائه دانشگاهی و پروژه پایانی</span>
           <div class="hero-mini-grid">
             <article>
-              <strong>SQLite</strong>
+              <strong>پایگاه داده SQLite</strong>
               <span>ذخیره‌سازی محلی و پایدار</span>
             </article>
             <article>
-              <strong>RTL Persian</strong>
-              <span>طراحی بومی و فارسی کامل</span>
+              <strong>چیدمان راست‌به‌چپ</strong>
+              <span>رابط بومی و کاملا فارسی</span>
             </article>
             <article>
-              <strong>Electron</strong>
+              <strong>چارچوب Electron</strong>
               <span>اجرا روی دسکتاپ واقعی</span>
             </article>
           </div>
@@ -128,14 +128,27 @@
         <div class="table-head">
           <div>
             <h3>فهرست کتاب‌ها</h3>
-            <p>برای اجرای عملیات، یکی از ردیف‌ها را انتخاب کنید.</p>
+            <p>برای مدیریت دقیق، یک ردیف را انتخاب کنید و عملیات موردنظر را انجام دهید.</p>
           </div>
-          <span id="tableCountText" class="table-count">۰ کتاب در فهرست</span>
+          <div class="table-head-meta">
+            <span id="tableCountText" class="table-count">۰ کتاب ثبت‌شده</span>
+            <span class="table-helper">نمایش یکپارچه وضعیت موجودی و امانت کتاب‌ها</span>
+          </div>
         </div>
 
         <div class="table-wrapper">
           <div class="table-scroll">
             <table id="booksTable" aria-label="جدول کتاب‌ها">
+              <colgroup>
+                <col class="col-title" />
+                <col class="col-author" />
+                <col class="col-category" />
+                <col class="col-year" />
+                <col class="col-publisher" />
+                <col class="col-status" />
+                <col class="col-borrower" />
+                <col class="col-date" />
+              </colgroup>
               <thead>
                 <tr>
                   <th>عنوان کتاب</th>
@@ -153,9 +166,13 @@
           </div>
 
           <div id="emptyState" class="empty-state hidden">
+            <div class="empty-state-visual" aria-hidden="true">
+              <span class="empty-book empty-book-main"></span>
+              <span class="empty-book empty-book-side"></span>
+            </div>
             <div class="empty-state-badge">فهرست خالی</div>
-            <h4>کتابی برای نمایش وجود ندارد</h4>
-            <p>برای شروع مدیریت، اولین کتاب را اضافه کنید تا فهرست فعال شود.</p>
+            <h4>هنوز کتابی ثبت نشده است</h4>
+            <p>با انتخاب «افزودن کتاب»، اولین عنوان را وارد کنید تا فهرست مدیریت کتابخانه فعال شود.</p>
           </div>
         </div>
       </section>
@@ -207,8 +224,8 @@
           </div>
 
           <div class="modal-actions">
-            <button id="cancelBookModalBtn" type="button" class="btn btn-light">انصراف</button>
             <button id="saveBookBtn" type="submit" class="btn btn-primary">ذخیره</button>
+            <button id="cancelBookModalBtn" type="button" class="btn btn-light">انصراف</button>
           </div>
         </form>
       </div>
@@ -240,8 +257,8 @@
           </div>
 
           <div class="modal-actions">
-            <button id="cancelBorrowModalBtn" type="button" class="btn btn-light">انصراف</button>
             <button type="submit" class="btn btn-secondary">ثبت امانت</button>
+            <button id="cancelBorrowModalBtn" type="button" class="btn btn-light">انصراف</button>
           </div>
         </form>
       </div>
@@ -253,8 +270,8 @@
         <h3 id="dialogTitle">عنوان پیام</h3>
         <p id="dialogMessage">متن پیام</p>
         <div class="dialog-actions">
+          <button id="dialogConfirmBtn" type="button" class="btn btn-primary">تایید</button>
           <button id="dialogCancelBtn" type="button" class="btn btn-light hidden">انصراف</button>
-          <button id="dialogConfirmBtn" type="button" class="btn btn-primary">باشه</button>
         </div>
       </div>
     </div>
