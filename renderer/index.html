@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fa" dir="rtl">
   <head>
     <meta charset="UTF-8" />
@@ -11,86 +11,151 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <div class="backdrop" aria-hidden="true">
+      <span class="mesh mesh-one"></span>
+      <span class="mesh mesh-two"></span>
+      <span class="mesh mesh-three"></span>
+    </div>
+
     <main class="app-shell">
-      <header class="app-header">
-        <div>
-          <h1>سامانه مدیریت کتابخانه شخصی</h1>
-          <p>ثبت، جستجو و مدیریت امانت کتاب‌ها در یک محیط حرفه‌ای</p>
+      <header class="hero-panel">
+        <div class="hero-content">
+          <p class="hero-eyebrow">پنل مدیریت کتابخانه شخصی</p>
+          <h1>سامانه مدیریت کتابخانه شخصی و ثبت امانت کتاب</h1>
+          <p class="hero-subtitle">
+            یک محیط حرفه‌ای برای ثبت کتاب‌ها، پیگیری وضعیت امانت و مدیریت اطلاعات کتابخانه در دیتابیس محلی.
+          </p>
         </div>
-        <span class="project-badge">پروژه دانشگاهی برنامه‌نویسی</span>
+
+        <div class="hero-meta">
+          <span class="project-badge">مناسب برای ارائه دانشگاهی و پروژه پایانی</span>
+          <div class="hero-mini-grid">
+            <article>
+              <strong>SQLite</strong>
+              <span>ذخیره‌سازی محلی و پایدار</span>
+            </article>
+            <article>
+              <strong>RTL Persian</strong>
+              <span>طراحی بومی و فارسی کامل</span>
+            </article>
+            <article>
+              <strong>Electron</strong>
+              <span>اجرا روی دسکتاپ واقعی</span>
+            </article>
+          </div>
+        </div>
       </header>
 
       <section class="summary-grid">
         <article class="summary-card total-card">
-          <p>مجموع کتاب‌ها</p>
-          <h2 id="totalBooksValue">۰</h2>
+          <div class="summary-icon" aria-hidden="true">کل</div>
+          <div class="summary-content">
+            <p>مجموع کتاب‌ها</p>
+            <h2 id="totalBooksValue">۰</h2>
+          </div>
         </article>
+
         <article class="summary-card available-card">
-          <p>کتاب‌های موجود</p>
-          <h2 id="availableBooksValue">۰</h2>
+          <div class="summary-icon" aria-hidden="true">آزاد</div>
+          <div class="summary-content">
+            <p>کتاب‌های موجود</p>
+            <h2 id="availableBooksValue">۰</h2>
+          </div>
         </article>
+
         <article class="summary-card borrowed-card">
-          <p>کتاب‌های امانت داده شده</p>
-          <h2 id="borrowedBooksValue">۰</h2>
+          <div class="summary-icon" aria-hidden="true">امانت</div>
+          <div class="summary-content">
+            <p>کتاب‌های امانت داده شده</p>
+            <h2 id="borrowedBooksValue">۰</h2>
+          </div>
         </article>
       </section>
 
       <section class="control-section">
-        <div class="control-field search-field">
-          <label for="searchInput">جستجو در کتابخانه</label>
-          <input
-            id="searchInput"
-            type="text"
-            placeholder="عنوان، نویسنده، دسته‌بندی، ناشر یا سال انتشار"
-            autocomplete="off"
-          />
+        <div class="control-top">
+          <div class="control-field search-field">
+            <label for="searchInput">جستجوی سریع در کتابخانه</label>
+            <div class="input-shell">
+              <span class="field-badge">جستجو</span>
+              <input
+                id="searchInput"
+                type="text"
+                placeholder="عنوان، نویسنده، دسته‌بندی، ناشر یا سال انتشار"
+                autocomplete="off"
+              />
+            </div>
+          </div>
+
+          <div class="control-field filter-field">
+            <label for="statusFilter">فیلتر وضعیت</label>
+            <div class="input-shell select-shell">
+              <select id="statusFilter">
+                <option value="همه">همه</option>
+                <option value="موجود">موجود</option>
+                <option value="امانت داده شده">امانت داده شده</option>
+              </select>
+            </div>
+          </div>
         </div>
 
-        <div class="control-field filter-field">
-          <label for="statusFilter">فیلتر وضعیت</label>
-          <select id="statusFilter">
-            <option value="همه">همه</option>
-            <option value="موجود">موجود</option>
-            <option value="امانت داده شده">امانت داده شده</option>
-          </select>
-        </div>
-
-        <div class="actions-grid">
-          <button id="addBookBtn" class="btn btn-primary">افزودن کتاب</button>
-          <button id="editBookBtn" class="btn btn-outline">ویرایش</button>
-          <button id="deleteBookBtn" class="btn btn-danger">حذف</button>
-          <button id="borrowBookBtn" class="btn btn-secondary">ثبت امانت</button>
-          <button id="returnBookBtn" class="btn btn-outline">بازگردانی</button>
-          <button id="refreshBtn" class="btn btn-light">تازه‌سازی</button>
+        <div class="control-bottom">
+          <p class="actions-caption">عملیات مدیریت کتاب‌ها</p>
+          <div class="actions-grid">
+            <button id="addBookBtn" class="btn btn-primary" type="button">
+              <span class="btn-text">افزودن کتاب</span>
+            </button>
+            <button id="editBookBtn" class="btn btn-outline" type="button">
+              <span class="btn-text">ویرایش</span>
+            </button>
+            <button id="deleteBookBtn" class="btn btn-danger" type="button">
+              <span class="btn-text">حذف</span>
+            </button>
+            <button id="borrowBookBtn" class="btn btn-secondary" type="button">
+              <span class="btn-text">ثبت امانت</span>
+            </button>
+            <button id="returnBookBtn" class="btn btn-outline" type="button">
+              <span class="btn-text">بازگردانی</span>
+            </button>
+            <button id="refreshBtn" class="btn btn-light" type="button">
+              <span class="btn-text">تازه‌سازی</span>
+            </button>
+          </div>
         </div>
       </section>
 
       <section class="table-section">
         <div class="table-head">
-          <h3>فهرست کتاب‌ها</h3>
-          <span id="tableCountText">۰ کتاب ثبت شده</span>
+          <div>
+            <h3>فهرست کتاب‌ها</h3>
+            <p>برای اجرای عملیات، یکی از ردیف‌ها را انتخاب کنید.</p>
+          </div>
+          <span id="tableCountText" class="table-count">۰ کتاب در فهرست</span>
         </div>
 
         <div class="table-wrapper">
-          <table id="booksTable" aria-label="جدول کتاب‌ها">
-            <thead>
-              <tr>
-                <th>عنوان کتاب</th>
-                <th>نویسنده</th>
-                <th>دسته‌بندی</th>
-                <th>سال انتشار</th>
-                <th>ناشر</th>
-                <th>وضعیت</th>
-                <th>امانت‌گیرنده</th>
-                <th>تاریخ امانت</th>
-              </tr>
-            </thead>
-            <tbody id="booksTableBody"></tbody>
-          </table>
+          <div class="table-scroll">
+            <table id="booksTable" aria-label="جدول کتاب‌ها">
+              <thead>
+                <tr>
+                  <th>عنوان کتاب</th>
+                  <th>نویسنده</th>
+                  <th>دسته‌بندی</th>
+                  <th>سال انتشار</th>
+                  <th>ناشر</th>
+                  <th>وضعیت</th>
+                  <th>امانت‌گیرنده</th>
+                  <th>تاریخ امانت</th>
+                </tr>
+              </thead>
+              <tbody id="booksTableBody"></tbody>
+            </table>
+          </div>
 
           <div id="emptyState" class="empty-state hidden">
+            <div class="empty-state-badge">فهرست خالی</div>
             <h4>کتابی برای نمایش وجود ندارد</h4>
-            <p>برای شروع مدیریت کتابخانه، اولین کتاب را ثبت کنید.</p>
+            <p>برای شروع مدیریت، اولین کتاب را اضافه کنید تا فهرست فعال شود.</p>
           </div>
         </div>
       </section>
@@ -99,10 +164,11 @@
     <div id="bookModalOverlay" class="modal-overlay hidden" aria-hidden="true">
       <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="bookModalTitle">
         <div class="modal-header">
-          <h3 id="bookModalTitle">افزودن کتاب</h3>
-          <button id="closeBookModalBtn" class="icon-btn" type="button" aria-label="بستن">
-            ×
-          </button>
+          <div>
+            <p class="modal-kicker">فرم اطلاعات کتاب</p>
+            <h3 id="bookModalTitle">افزودن کتاب</h3>
+          </div>
+          <button id="closeBookModalBtn" class="icon-btn" type="button" aria-label="بستن">×</button>
         </div>
 
         <form id="bookForm" class="modal-form">
@@ -151,10 +217,11 @@
     <div id="borrowModalOverlay" class="modal-overlay hidden" aria-hidden="true">
       <div class="modal-card borrow-modal" role="dialog" aria-modal="true" aria-labelledby="borrowModalTitle">
         <div class="modal-header">
-          <h3 id="borrowModalTitle">ثبت امانت کتاب</h3>
-          <button id="closeBorrowModalBtn" class="icon-btn" type="button" aria-label="بستن">
-            ×
-          </button>
+          <div>
+            <p class="modal-kicker">فرم ثبت امانت</p>
+            <h3 id="borrowModalTitle">ثبت امانت کتاب</h3>
+          </div>
+          <button id="closeBorrowModalBtn" class="icon-btn" type="button" aria-label="بستن">×</button>
         </div>
 
         <form id="borrowForm" class="modal-form">
