@@ -38,6 +38,7 @@ function cacheDom() {
   dom.statusFilter = document.getElementById("statusFilter");
 
   dom.addBookBtn = document.getElementById("addBookBtn");
+  dom.headerAddBookBtn = document.getElementById("headerAddBookBtn");
   dom.editBookBtn = document.getElementById("editBookBtn");
   dom.deleteBookBtn = document.getElementById("deleteBookBtn");
   dom.borrowBookBtn = document.getElementById("borrowBookBtn");
@@ -92,6 +93,7 @@ function bindEvents() {
   dom.statusFilter.addEventListener("change", refreshData);
 
   dom.addBookBtn.addEventListener("click", openAddBookModal);
+  dom.headerAddBookBtn?.addEventListener("click", openAddBookModal);
   dom.editBookBtn.addEventListener("click", openEditBookModal);
   dom.deleteBookBtn.addEventListener("click", onDeleteBook);
   dom.borrowBookBtn.addEventListener("click", openBorrowModalFromSelection);
