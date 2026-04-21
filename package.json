@@ -6,7 +6,8 @@
   "scripts": {
     "start": "electron .",
     "check": "node --check main.js && node --check preload.js && node --check ipc/book-handlers.js && node --check database/db.js && node --check renderer/library-service.js && node --check renderer/app.js",
-    "rebuild": "electron-rebuild -f -w better-sqlite3"
+    "rebuild": "electron-rebuild -f -w better-sqlite3",
+    "dist": "electron-builder --win"
   },
   "keywords": [
     "electron",
@@ -22,6 +23,27 @@
   },
   "devDependencies": {
     "@electron/rebuild": "^3.6.0",
-    "electron": "^30.5.1"
+    "electron": "^30.5.1",
+    "electron-builder": "^26.8.1"
+  },
+  "build": {
+    "appId": "com.sina.modernlibrary",
+    "productName": "Modern Library",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "ipc/**/*",
+      "database/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "signAndEditExecutable": false
+    }
   }
 }
