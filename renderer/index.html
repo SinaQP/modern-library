@@ -17,74 +17,80 @@
       <span class="ambient-shape ambient-shape-c"></span>
     </div>
 
-    <main class="desktop-shell">
-      <header class="app-topbar surface-enter surface-enter-1">
-        <div class="app-topbar-brand">
-          <span class="brand-dot" aria-hidden="true"></span>
-          <div>
-            <p class="brand-kicker">پنل مدیریت</p>
-            <h1 class="brand-title">کتابخانه شخصی</h1>
+    <main class="workspace-shell">
+      <header class="framebar surface-enter surface-enter-1">
+        <div class="framebar-brand">
+          <span class="framebar-mark" aria-hidden="true"></span>
+          <div class="framebar-titles">
+            <p>سیستم مدیریت</p>
+            <h1>کتابخانه شخصی</h1>
           </div>
         </div>
 
-        <div class="app-topbar-meta" aria-label="وضعیت رابط کاربری">
-          <span class="topbar-chip">نسخه دسکتاپ</span>
-          <span class="topbar-chip muted">RTL فارسی</span>
+        <div class="framebar-meta" aria-label="اطلاعات پوسته برنامه">
+          <span class="meta-chip">اپلیکیشن دسکتاپ</span>
+          <span class="meta-chip muted">رابط فارسی RTL</span>
         </div>
       </header>
 
-      <section class="compact-header surface-enter surface-enter-2">
-        <div class="compact-header-content">
-          <span class="section-chip">داشبورد کتاب‌ها</span>
-          <h2>مدیریت یکپارچه موجودی و امانت کتاب</h2>
-          <p>ثبت، جستجو و پیگیری وضعیت کتاب‌ها در یک فضای حرفه‌ای و متمرکز.</p>
+      <section class="overview-band surface-enter surface-enter-2">
+        <div class="overview-copy">
+          <span class="overview-chip">داشبورد مدیریت کتاب‌ها</span>
+          <h2>مرکز مدیریت موجودی و گردش امانت</h2>
+          <p>این پنل برای ثبت کتاب، پیگیری وضعیت امانت و اجرای عملیات روزانه طراحی شده است.</p>
         </div>
 
-        <button id="headerAddBookBtn" class="btn btn-primary header-primary-action" type="button">
-          <span class="btn-text">افزودن کتاب</span>
-        </button>
+        <div class="overview-side">
+          <button id="headerAddBookBtn" class="btn btn-primary" type="button">
+            <span class="btn-text">افزودن کتاب</span>
+          </button>
+          <p class="overview-side-note">افزودن سریع عنوان جدید به آرشیو</p>
+        </div>
       </section>
 
-      <section class="summary-grid surface-enter surface-enter-3">
-        <article class="metric-card metric-card-total">
-          <div class="metric-card-head">
-            <p class="metric-label">مجموع کتاب‌ها</p>
-            <span class="metric-tag">کل آرشیو</span>
+      <section class="metrics-strip surface-enter surface-enter-3">
+        <article class="metric-block metric-total">
+          <div class="metric-head">
+            <span class="metric-key">کل کتاب‌ها</span>
+            <span class="metric-state">آرشیو</span>
           </div>
-          <div class="metric-card-foot">
+          <div class="metric-main">
             <h3 id="totalBooksValue">۰</h3>
-            <span class="metric-hint">عنوان</span>
+            <span class="metric-unit">عنوان</span>
           </div>
+          <p class="metric-foot">نمای کلی ثبت‌شده در سیستم</p>
         </article>
 
-        <article class="metric-card metric-card-available">
-          <div class="metric-card-head">
-            <p class="metric-label">کتاب‌های موجود</p>
-            <span class="metric-tag">آماده امانت</span>
+        <article class="metric-block metric-available">
+          <div class="metric-head">
+            <span class="metric-key">کتاب‌های موجود</span>
+            <span class="metric-state">فعال</span>
           </div>
-          <div class="metric-card-foot">
+          <div class="metric-main">
             <h3 id="availableBooksValue">۰</h3>
-            <span class="metric-hint">نسخه</span>
+            <span class="metric-unit">نسخه</span>
           </div>
+          <p class="metric-foot">قابل ثبت امانت جدید</p>
         </article>
 
-        <article class="metric-card metric-card-borrowed">
-          <div class="metric-card-head">
-            <p class="metric-label">امانت داده شده</p>
-            <span class="metric-tag">در گردش</span>
+        <article class="metric-block metric-borrowed">
+          <div class="metric-head">
+            <span class="metric-key">امانت داده شده</span>
+            <span class="metric-state">در گردش</span>
           </div>
-          <div class="metric-card-foot">
+          <div class="metric-main">
             <h3 id="borrowedBooksValue">۰</h3>
-            <span class="metric-hint">نسخه</span>
+            <span class="metric-unit">نسخه</span>
           </div>
+          <p class="metric-foot">نیازمند پیگیری بازگشت</p>
         </article>
       </section>
 
-      <section class="control-toolbar surface-enter surface-enter-4">
-        <div class="toolbar-field toolbar-search">
-          <label for="searchInput">جستجو در کتابخانه</label>
-          <div class="input-shell search-shell">
-            <span class="input-prefix">جستجو</span>
+      <section class="command-surface surface-enter surface-enter-4">
+        <div class="command-query">
+          <label for="searchInput">جستجو</label>
+          <div class="input-shell">
+            <span class="input-prefix">فیلد سریع</span>
             <input
               id="searchInput"
               type="text"
@@ -94,8 +100,8 @@
           </div>
         </div>
 
-        <div class="toolbar-field toolbar-filter">
-          <label for="statusFilter">فیلتر وضعیت</label>
+        <div class="command-filter">
+          <label for="statusFilter">وضعیت کتاب</label>
           <div class="input-shell select-shell">
             <select id="statusFilter">
               <option value="همه">همه</option>
@@ -105,11 +111,10 @@
           </div>
         </div>
 
-        <div class="toolbar-actions-panel">
-          <p class="toolbar-actions-title">اقدامات سریع</p>
-          <div class="toolbar-actions">
+        <div class="command-actions" role="group" aria-label="اقدامات مدیریتی">
+          <div class="action-row primary-row">
             <button id="addBookBtn" class="btn btn-primary" type="button">
-              <span class="btn-text">افزودن کتاب</span>
+              <span class="btn-text">افزودن</span>
             </button>
             <button id="editBookBtn" class="btn btn-secondary" type="button">
               <span class="btn-text">ویرایش</span>
@@ -120,6 +125,8 @@
             <button id="returnBookBtn" class="btn btn-ghost" type="button">
               <span class="btn-text">بازگردانی</span>
             </button>
+          </div>
+          <div class="action-row utility-row">
             <button id="deleteBookBtn" class="btn btn-danger" type="button">
               <span class="btn-text">حذف</span>
             </button>
@@ -131,16 +138,17 @@
         </div>
       </section>
 
-      <section class="table-section surface-enter surface-enter-5">
-        <div class="table-head">
-          <div class="table-head-main">
+      <section class="table-section management-panel surface-enter surface-enter-5">
+        <div class="panel-head">
+          <div class="panel-titleblock">
+            <span class="panel-chip">پنل مدیریت داده</span>
             <h3>فهرست کتاب‌ها</h3>
-            <p>برای اجرای عملیات، یک ردیف را انتخاب کنید.</p>
+            <p>برای اجرای عملیات، ردیف موردنظر را انتخاب کنید تا دکمه‌ها فعال شوند.</p>
           </div>
 
-          <div class="table-head-meta">
+          <div class="panel-meta">
             <span id="tableCountText" class="table-count">۰ کتاب ثبت‌شده</span>
-            <span class="table-helper">نمایش یکپارچه موجودی و امانت</span>
+            <span class="table-helper">نمایش متمرکز موجودی، وضعیت و اطلاعات امانت</span>
           </div>
         </div>
 
@@ -179,8 +187,8 @@
               <span class="empty-book empty-book-side"></span>
             </div>
             <div class="empty-state-badge">فهرست خالی</div>
-            <h4>هنوز کتابی ثبت نشده است</h4>
-            <p>از دکمه «افزودن کتاب» استفاده کنید تا اولین عنوان وارد کتابخانه شود.</p>
+            <h4>کتابی برای نمایش وجود ندارد</h4>
+            <p>با دکمه «افزودن کتاب» اولین عنوان را ثبت کنید تا پنل مدیریت فعال شود.</p>
           </div>
         </div>
       </section>
