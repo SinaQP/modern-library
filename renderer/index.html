@@ -18,7 +18,7 @@
     </div>
 
     <main class="app-shell">
-      <header class="hero-panel">
+      <header class="hero-panel surface-enter surface-enter-1">
         <div class="hero-content">
           <p class="hero-eyebrow">پنل مدیریت کتابخانه شخصی</p>
           <h1>سامانه مدیریت کتابخانه شخصی و ثبت امانت کتاب</h1>
@@ -46,7 +46,7 @@
         </div>
       </header>
 
-      <section class="summary-grid">
+      <section class="summary-grid surface-enter surface-enter-2">
         <article class="summary-card total-card">
           <div class="summary-icon" aria-hidden="true">کل</div>
           <div class="summary-content">
@@ -72,7 +72,7 @@
         </article>
       </section>
 
-      <section class="control-section">
+      <section class="control-section surface-enter surface-enter-3">
         <div class="control-top">
           <div class="control-field search-field">
             <label for="searchInput">جستجوی سریع در کتابخانه</label>
@@ -117,14 +117,15 @@
             <button id="returnBookBtn" class="btn btn-outline" type="button">
               <span class="btn-text">بازگردانی</span>
             </button>
-            <button id="refreshBtn" class="btn btn-light" type="button">
+            <button id="refreshBtn" class="btn btn-light" type="button" aria-busy="false">
               <span class="btn-text">تازه‌سازی</span>
+              <span class="btn-spinner" aria-hidden="true"></span>
             </button>
           </div>
         </div>
       </section>
 
-      <section class="table-section">
+      <section class="table-section surface-enter surface-enter-4">
         <div class="table-head">
           <div>
             <h3>فهرست کتاب‌ها</h3>

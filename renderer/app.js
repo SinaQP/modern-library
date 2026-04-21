@@ -12,13 +12,15 @@ const state = {
   overlayTimers: new Map(),
   refreshRequestId: 0,
   refreshInProgress: false,
-  refreshButtonLabel: ""
+  refreshButtonLabel: "",
+  reduceMotion: false
 };
 
 const dom = {};
 
 document.addEventListener("DOMContentLoaded", () => {
   cacheDom();
+  initializeMotionPreference();
   bindEvents();
   bindFormFieldValidation();
   updateActionButtons();
@@ -45,6 +47,7 @@ function cacheDom() {
   dom.booksTable = document.getElementById("booksTable");
   dom.booksTableBody = document.getElementById("booksTableBody");
   dom.emptyState = document.getElementById("emptyState");
+  dom.tableSection = document.querySelector(".table-section");
 
   dom.bookModalOverlay = document.getElementById("bookModalOverlay");
   dom.bookModalTitle = document.getElementById("bookModalTitle");
@@ -80,7 +83,8 @@ function cacheDom() {
   dom.dialogConfirmBtn = document.getElementById("dialogConfirmBtn");
 
   dom.toastContainer = document.getElementById("toastContainer");
-  state.refreshButtonLabel = dom.refreshBtn?.textContent || "";
+  state.refreshButtonLabel =
+    dom.refreshBtn?.querySelector(".btn-text")?.textContent?.trim() || dom.refreshBtn?.textContent || "";
 }
 
 function bindEvents() {
@@ -144,6 +148,32 @@ function bindEvents() {
       closeOverlay(dom.bookModalOverlay);
     }
   });
+}
+
+function initializeMotionPreference() {
+  const query = typeof window.matchMedia === "function"
+    ? window.matchMedia("(prefers-reduced-motion: reduce)")
+    : null;
+
+  if (!query) {
+    return;
+  }
+
+  const applyPreference = () => {
+    state.reduceMotion = query.matches;
+    document.body.classList.toggle("reduce-motion", state.reduceMotion);
+  };
+
+  applyPreference();
+
+  if (typeof query.addEventListener === "function") {
+    query.addEventListener("change", applyPreference);
+    return;
+  }
+
+  if (typeof query.addListener === "function") {
+    query.addListener(applyPreference);
+  }
 }
 
 function bindFormFieldValidation() {
@@ -224,7 +254,16 @@ function getActiveFilters() {
 function setRefreshBusy(isBusy) {
   state.refreshInProgress = isBusy;
   dom.refreshBtn.disabled = isBusy;
+  dom.refreshBtn.classList.toggle("is-loading", isBusy);
+  dom.refreshBtn.setAttribute("aria-busy", isBusy ? "true" : "false");
+  dom.tableSection?.classList.toggle("is-refreshing", isBusy);
+
   if (!isBusy && state.refreshButtonLabel) {
+    const refreshText = dom.refreshBtn.querySelector(".btn-text");
+    if (refreshText) {
+      refreshText.textContent = state.refreshButtonLabel;
+      return;
+    }
     dom.refreshBtn.textContent = state.refreshButtonLabel;
   }
 }
@@ -248,7 +287,7 @@ async function refreshData() {
     }
 
     renderSummary(summary || {});
-    renderTable();
+    renderTable({ animateRows: true });
     updateActionButtons();
   } catch (error) {
     if (requestId !== state.refreshRequestId) {
@@ -274,7 +313,8 @@ function renderSummary(summary) {
   dom.borrowedBooksValue.textContent = toPersianDigits(summary.borrowed_books || 0);
 }
 
-function renderTable() {
+function renderTable(options = {}) {
+  const animateRows = Boolean(options.animateRows) && !state.reduceMotion;
   dom.booksTableBody.innerHTML = "";
 
   dom.tableCountText.textContent = `${toPersianDigits(state.books.length)} کتاب ثبت‌شده`;
@@ -286,9 +326,14 @@ function renderTable() {
 
   dom.emptyState.classList.add("hidden");
 
-  state.books.forEach((book) => {
+  state.books.forEach((book, index) => {
     const row = document.createElement("tr");
     row.dataset.id = String(book.id);
+
+    if (animateRows) {
+      row.classList.add("row-enter");
+      row.style.setProperty("--row-delay", `${Math.min(index, 8) * 22}ms`);
+    }
 
     if (state.selectedBookId === book.id) {
       row.classList.add("selected");
