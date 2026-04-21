@@ -241,7 +241,7 @@ function bindFieldValidation(input, validator) {
 
 function ensureLibraryService() {
   if (!libraryService || typeof libraryService.fetchLibraryData !== "function") {
-    throw new Error("Library service is unavailable.");
+    throw new Error("سرویس کتابخانه در دسترس نیست.");
   }
   return libraryService;
 }
@@ -297,10 +297,10 @@ async function refreshData() {
     }
 
     await showDialog({
-      title: "Error",
+      title: "خطا",
       message: getFriendlyError(error),
       type: "danger",
-      confirmText: "OK"
+      confirmText: "متوجه شدم"
     });
   } finally {
     if (requestId === state.refreshRequestId) {
@@ -496,7 +496,7 @@ async function onSubmitBookForm(event) {
     } else {
       const editingId = Number(dom.bookIdInput.value);
       if (!Number.isInteger(editingId) || editingId <= 0) {
-        throw new Error("A valid book record must be selected for editing.");
+        throw new Error("برای ویرایش، باید یک کتاب معتبر انتخاب شود.");
       }
 
       payload.id = editingId;
@@ -610,12 +610,12 @@ async function onSubmitBorrowForm(event) {
   }
 
   if (!hasValidBookId) {
-    showFormNotice(dom.borrowFormNotice, "Please select a valid book before registering a borrow operation.", "error");
+    showFormNotice(dom.borrowFormNotice, "پیش از ثبت امانت، یک کتاب معتبر انتخاب کنید.", "error");
     await showDialog({
-      title: "Book Selection",
-      message: "A selected record is required for borrow.",
+      title: "انتخاب کتاب",
+      message: "برای ثبت امانت، انتخاب یک کتاب ضروری است.",
       type: "warning",
-      confirmText: "OK"
+      confirmText: "متوجه شدم"
     });
     return;
   }
