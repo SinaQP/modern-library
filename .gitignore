@@ -1,6 +1,12 @@
 node_modules/
 dist/
+renderer-dist/
 *.log
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm

@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const Database = require("better-sqlite3");
+const { createUserFacingError } = require("../shared/errors");
 
 const STATUS_AVAILABLE = "موجود";
 const STATUS_BORROWED = "امانت داده شده";
@@ -29,7 +30,7 @@ function normalizePersianDigits(value) {
 function normalizeId(id) {
   const parsedId = Number(id);
   if (!Number.isInteger(parsedId) || parsedId <= 0) {
-    throw new Error("شناسه کتاب معتبر نیست.");
+    throw createUserFacingError("شناسه کتاب معتبر نیست.");
   }
   return parsedId;
 }
@@ -41,7 +42,7 @@ function normalizeYear(year) {
 
   const parsedYear = Number(year);
   if (!Number.isInteger(parsedYear) || parsedYear < 1000 || parsedYear > 2100) {
-    throw new Error("سال انتشار باید یک عدد معتبر بین 1000 تا 2100 باشد.");
+    throw createUserFacingError("سال انتشار باید یک عدد معتبر بین 1000 تا 2100 باشد.");
   }
 
   return parsedYear;
@@ -50,11 +51,11 @@ function normalizeYear(year) {
 function normalizeBorrowDate(value) {
   const borrowDate = sanitizeText(value);
   if (!borrowDate) {
-    throw new Error("Borrow date is required.");
+    throw createUserFacingError("Borrow date is required.");
   }
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(borrowDate)) {
-    throw new Error("Borrow date must be in YYYY-MM-DD format.");
+    throw createUserFacingError("Borrow date must be in YYYY-MM-DD format.");
   }
 
   return borrowDate;
@@ -63,11 +64,11 @@ function normalizeBorrowDate(value) {
 function normalizeBorrowerName(value) {
   const borrowerName = sanitizeText(value);
   if (!borrowerName) {
-    throw new Error("Borrower name is required.");
+    throw createUserFacingError("Borrower name is required.");
   }
 
   if (borrowerName.length < 3) {
-    throw new Error("Borrower name must be at least 3 characters.");
+    throw createUserFacingError("Borrower name must be at least 3 characters.");
   }
 
   return borrowerName;
@@ -183,11 +184,11 @@ function addBook(bookData = {}) {
   const author = sanitizeText(payload.author);
 
   if (!title) {
-    throw new Error("عنوان کتاب نمی‌تواند خالی باشد.");
+    throw createUserFacingError("عنوان کتاب نمی‌تواند خالی باشد.");
   }
 
   if (!author) {
-    throw new Error("نام نویسنده نمی‌تواند خالی باشد.");
+    throw createUserFacingError("نام نویسنده نمی‌تواند خالی باشد.");
   }
 
   const insertStatement = db.prepare(`
@@ -242,16 +243,16 @@ function updateBook(bookData = {}) {
   const author = sanitizeText(payload.author);
 
   if (!title) {
-    throw new Error("عنوان کتاب نمی‌تواند خالی باشد.");
+    throw createUserFacingError("عنوان کتاب نمی‌تواند خالی باشد.");
   }
 
   if (!author) {
-    throw new Error("نام نویسنده نمی‌تواند خالی باشد.");
+    throw createUserFacingError("نام نویسنده نمی‌تواند خالی باشد.");
   }
 
   const targetBook = db.prepare("SELECT id FROM books WHERE id = ?").get(id);
   if (!targetBook) {
-    throw new Error("کتاب مورد نظر پیدا نشد.");
+    throw createUserFacingError("کتاب مورد نظر پیدا نشد.");
   }
 
   const result = db.prepare(`
@@ -287,7 +288,7 @@ function deleteBook(id) {
   const result = db.prepare("DELETE FROM books WHERE id = ?").run(normalizedId);
 
   if (result.changes === 0) {
-    throw new Error("کتاب مورد نظر برای حذف پیدا نشد.");
+    throw createUserFacingError("کتاب مورد نظر برای حذف پیدا نشد.");
   }
 
   return { deleted: true };
@@ -306,11 +307,11 @@ function borrowBook(payload = {}) {
       .get(id);
 
     if (!targetBook) {
-      throw new Error("Book not found.");
+      throw createUserFacingError("Book not found.");
     }
 
     if (targetBook.status === STATUS_BORROWED) {
-      throw new Error("This book is already borrowed.");
+      throw createUserFacingError("This book is already borrowed.");
     }
 
     const result = db.prepare(`
@@ -346,11 +347,11 @@ function returnBook(id) {
       .get(normalizedId);
 
     if (!targetBook) {
-      throw new Error("Book not found.");
+      throw createUserFacingError("Book not found.");
     }
 
     if (targetBook.status !== STATUS_BORROWED) {
-      throw new Error("Only borrowed books can be returned.");
+      throw createUserFacingError("Only borrowed books can be returned.");
     }
 
     const result = db.prepare(`
