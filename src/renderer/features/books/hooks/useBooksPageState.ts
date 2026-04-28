@@ -2,6 +2,27 @@ import { useMemo, useState } from "react";
 import { initialSelectedBookIds, mockBooks, noResultsFilters } from "../booksData";
 import type { BookFilter, BookModalType, BookRecord, ToastMessage, ToastVariant } from "../types";
 
+function parseBooksRouteState(routeState: string): {
+  filter: BookFilter | null;
+  initialModal: BookModalType | null;
+  search: string;
+} {
+  const [hashPath, hashQuery = ""] = routeState.split("?");
+  const isBooksRoute = hashPath.startsWith("#books");
+  const params = new URLSearchParams(hashQuery);
+  const search = isBooksRoute ? (params.get("search") ?? "").trim() : "";
+  const filterValue = isBooksRoute ? params.get("filter") : null;
+  const actionValue = isBooksRoute ? params.get("action") : null;
+
+  const filter: BookFilter | null =
+    filterValue === "available" || filterValue === "loaned" || filterValue === "overdue"
+      ? filterValue
+      : null;
+  const initialModal: BookModalType | null = actionValue === "add" ? "add" : null;
+
+  return { filter, initialModal, search };
+}
+
 function matchesFilter(book: BookRecord, filters: Set<BookFilter>): boolean {
   if (filters.size === 0) {
     return true;
@@ -39,17 +60,22 @@ const messageByVariant = {
 };
 
 export function useBooksPageState(routeState: string) {
+  const routeConfig = parseBooksRouteState(routeState);
   const isEmptyRoute = routeState.includes("empty");
   const isNoResultsRoute = routeState.includes("no-results");
   const [books] = useState<BookRecord[]>(isEmptyRoute ? [] : mockBooks);
   const [activeFilters, setActiveFilters] = useState<Set<BookFilter>>(
-    isNoResultsRoute ? new Set(noResultsFilters) : new Set()
+    isNoResultsRoute
+      ? new Set(noResultsFilters)
+      : routeConfig.filter
+        ? new Set<BookFilter>([routeConfig.filter])
+        : new Set()
   );
-  const [search, setSearch] = useState(isNoResultsRoute ? "دیوان حافظ" : "");
+  const [search, setSearch] = useState(routeConfig.search || (isNoResultsRoute ? "دیوان حافظ" : ""));
   const [selectedBookIds, setSelectedBookIds] = useState<Set<string>>(
     isEmptyRoute || isNoResultsRoute ? new Set() : new Set(initialSelectedBookIds)
   );
-  const [activeModal, setActiveModal] = useState<BookModalType | null>(null);
+  const [activeModal, setActiveModal] = useState<BookModalType | null>(routeConfig.initialModal);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const filteredBooks = useMemo(

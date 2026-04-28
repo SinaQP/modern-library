@@ -23,21 +23,37 @@ export function SelectionActionBar({
   }
 
   return (
-    <section className="selection-action-bar" aria-label="اقدام‌های انتخاب">
+    <section className="selection-action-bar" aria-label="اقدام‌های انتخاب" dir="rtl">
+      <div className="selection-summary">
+        <CheckCircle2 size={24} aria-hidden="true" />
+        <strong className="selection-count">
+          {count.toLocaleString("fa-IR")} کتاب انتخاب شده‌اند
+        </strong>
+      </div>
+
+      <div className="selection-buttons">
+        <button onClick={onReturn} type="button">
+          <RotateCcw size={20} aria-hidden="true" />
+          بازگردانی
+        </button>
+        <button onClick={onLoan} type="button">
+          <UserPlus size={20} aria-hidden="true" />
+          ثبت امانت
+        </button>
+        <button onClick={onDelete} type="button">
+          <Trash2 size={20} aria-hidden="true" />
+          حذف
+        </button>
+        <button onClick={onEdit} type="button">
+          <Pencil size={20} aria-hidden="true" />
+          ویرایش
+        </button>
+      </div>
+
       <button className="selection-clear" onClick={onClearSelection} type="button">
         <X size={22} aria-hidden="true" />
         <span>لغو انتخاب</span>
       </button>
-      <div className="selection-actions">
-        <button onClick={onReturn} type="button"><RotateCcw size={20} aria-hidden="true" />بازگردانی</button>
-        <button onClick={onLoan} type="button"><UserPlus size={20} aria-hidden="true" />ثبت امانت</button>
-        <button onClick={onDelete} type="button"><Trash2 size={20} aria-hidden="true" />حذف</button>
-        <button onClick={onEdit} type="button"><Pencil size={20} aria-hidden="true" />ویرایش</button>
-      </div>
-      <strong>
-        <CheckCircle2 size={24} aria-hidden="true" />
-        {count.toLocaleString("fa-IR")} کتاب انتخاب شده‌اند
-      </strong>
     </section>
   );
 }

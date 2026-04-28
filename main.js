@@ -20,8 +20,8 @@ function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
-    minWidth: 1150,
-    minHeight: 760,
+    minWidth: 1024,
+    minHeight: 720,
     autoHideMenuBar: true,
     title: "سامانه مدیریت کتابخانه شخصی و ثبت امانت کتاب",
     backgroundColor: "#f3f6fb",

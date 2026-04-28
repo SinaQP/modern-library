@@ -18,12 +18,22 @@ export function DashboardPage(): ReactElement {
   const books = forceEmptyDashboard ? [] : populatedBooks;
   const isEmpty = books.length === 0;
   const visibleStats = isEmpty ? emptyStats : populatedStats;
+  
+  function navigateToBooks(params?: Record<string, string>) {
+    const query = new URLSearchParams(params).toString();
+    window.location.hash = query ? `#books?${query}` : "#books";
+  }
 
   return (
     <div className={isEmpty ? "dashboard-shell is-empty-dashboard" : "dashboard-shell"} dir="rtl">
       <Sidebar activeItem="dashboard" isEmpty={isEmpty} />
       <main className="dashboard-main">
-        <DashboardHeader isEmpty={isEmpty} />
+        <DashboardHeader
+          isEmpty={isEmpty}
+          onAddBook={() => navigateToBooks({ action: "add" })}
+          onOpenFilter={() => navigateToBooks({ filter: "available" })}
+          onSearch={(query) => navigateToBooks({ search: query })}
+        />
 
         <section className="stats-grid" aria-label="آمار کتابخانه">
           {visibleStats.map((stat) => (
