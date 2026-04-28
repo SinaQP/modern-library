@@ -4,12 +4,14 @@ import {
   CheckCircle2,
   Clock3,
   Grid2X2,
+  Lightbulb,
   PenLine,
   PlusCircle,
   PlusSquare,
   Repeat2,
   Search,
   Settings,
+  UserPlus,
   UserRound,
   UsersRound
 } from "lucide-react";
@@ -58,6 +60,21 @@ export type RecentActivity = {
   tone: "blue" | "green" | "orange";
 };
 
+export type EmptyStateConfig = {
+  actionIcon: LucideIcon;
+  actionLabel: string;
+  heading: string;
+  icon: LucideIcon;
+  pill: string;
+  text: string;
+  title: string;
+};
+
+export type GuideStep = {
+  description: string;
+  title: string;
+};
+
 export const sidebarItems: SidebarItem[] = [
   { label: "داشبورد", icon: Grid2X2, isActive: true },
   { label: "کتاب‌ها", icon: BookOpen, isActive: false },
@@ -66,7 +83,15 @@ export const sidebarItems: SidebarItem[] = [
   { label: "تنظیمات", icon: Settings, isActive: false }
 ];
 
-export const stats: StatItem[] = [
+export const populatedBooks = [
+  { title: "پست شبانه عادت" },
+  { title: "انسان در جستجوی معنا" },
+  { title: "ملت عشق" },
+  { title: "سقوط" },
+  { title: "بادبادک‌باز" }
+];
+
+export const populatedStats: StatItem[] = [
   {
     title: "کل کتاب‌ها",
     value: "۵۴۸",
@@ -97,6 +122,37 @@ export const stats: StatItem[] = [
     unit: "کتاب",
     subtitle: "",
     detail: "۳ امانت دیرکرد",
+    icon: AlertTriangle,
+    tone: "red"
+  }
+];
+
+export const emptyStats: StatItem[] = [
+  {
+    title: "کل کتاب‌ها",
+    value: "۰",
+    subtitle: "هنوز کتابی ثبت نشده است",
+    icon: BookOpen,
+    tone: "blue"
+  },
+  {
+    title: "کتاب‌های موجود",
+    value: "۰",
+    subtitle: "هنوز کتابی ثبت نشده است",
+    icon: CheckCircle2,
+    tone: "green"
+  },
+  {
+    title: "امانت‌های فعال",
+    value: "۰",
+    subtitle: "هنوز امانتی ثبت نشده است",
+    icon: UserRound,
+    tone: "orange"
+  },
+  {
+    title: "کتاب‌های دیرکرد",
+    value: "۰",
+    subtitle: "هنوز موردی وجود ندارد",
     icon: AlertTriangle,
     tone: "red"
   }
@@ -150,3 +206,41 @@ export const recentActivities: RecentActivity[] = [
 ];
 
 export const activityButtonIcon = Clock3;
+
+export const emptyStateCards: EmptyStateConfig[] = [
+  {
+    title: "کتاب‌های اخیر",
+    pill: "هیچ موردی وجود ندارد",
+    icon: BookOpen,
+    heading: "هنوز کتابی اضافه نکرده‌اید",
+    text: "بعد از افزودن کتاب‌ها، آخرین موارد در اینجا نمایش داده می‌شود.",
+    actionLabel: "افزودن اولین کتاب",
+    actionIcon: PlusCircle
+  },
+  {
+    title: "فعالیت‌های اخیر",
+    pill: "هیچ فعالیتی وجود ندارد",
+    icon: Clock3,
+    heading: "هنوز فعالیتی ثبت نشده است",
+    text: "بعد از ثبت امانت‌ها و عملیات، فعالیت‌های اخیر در اینجا نمایش داده می‌شود.",
+    actionLabel: "ثبت اولین امانت",
+    actionIcon: UserPlus
+  }
+];
+
+export const gettingStartedSteps: GuideStep[] = [
+  {
+    title: "افزودن اولین کتاب",
+    description: "اطلاعات کتاب‌ها را ثبت کنید."
+  },
+  {
+    title: "ثبت امانت‌گیرندگان",
+    description: "اطلاعات افراد امانت‌گیرنده را اضافه کنید."
+  },
+  {
+    title: "ثبت اولین امانت",
+    description: "کتابی را به امانت دهید و مدیریت را شروع کنید."
+  }
+];
+
+export const guideHintIcon = Lightbulb;
