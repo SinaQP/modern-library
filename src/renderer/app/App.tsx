@@ -1,11 +1,6 @@
 import type { ReactElement } from "react";
-import { AppLayout } from "./layout/AppLayout";
-import { LibraryPage } from "../features/library";
+import { DashboardPage } from "../features/dashboard";
 
 export function App(): ReactElement {
-  return (
-    <AppLayout>
-      <LibraryPage />
-    </AppLayout>
-  );
+  return <DashboardPage />;
 }
