@@ -1,1049 +1,462 @@
-const STATUS_AVAILABLE = "موجود";
-const STATUS_BORROWED = "امانت داده شده";
-const OVERLAY_CLOSE_MS = 280;
-const libraryService = window.libraryService;
+const populatedBooks = [
+  { title: "پست شبانه عادت" },
+  { title: "انسان در جستجوی معنا" },
+  { title: "ملت عشق" },
+  { title: "سقوط" },
+  { title: "بادبادک‌باز" }
+];
 
-const state = {
-  books: [],
-  selectedBookId: null,
-  bookModalMode: "add",
-  searchDebounceTimer: null,
-  dialogResolver: null,
-  overlayTimers: new Map(),
-  refreshRequestId: 0,
-  refreshInProgress: false,
-  refreshButtonLabel: "",
-  reduceMotion: false
+const forceEmptyDashboard =
+  new URLSearchParams(window.location.search).get("state") === "empty" ||
+  window.location.hash === "#empty";
+
+const dashboardData = {
+  books: forceEmptyDashboard ? [] : populatedBooks,
+  menuItems: [
+    { label: "داشبورد", icon: "grid", active: true },
+    { label: "کتاب‌ها", icon: "book", active: false },
+    { label: "امانت‌ها", icon: "repeat", active: false },
+    { label: "امانت‌گیرندگان", icon: "users", active: false },
+    { label: "تنظیمات", icon: "settings", active: false }
+  ],
+  quickActions: [
+    { label: "افزودن کتاب", icon: "plusSquare", action: "add-book" },
+    { label: "ثبت امانت", icon: "repeat", action: "borrow-book" },
+    { label: "جستجوی کتاب", icon: "search", action: "search-book" },
+    { label: "امانت‌گیرندگان", icon: "users", action: "borrowers" }
+  ],
+  dueBooks: [
+    {
+      title: "پست شبانه عادت",
+      author: "جیمز کلیر",
+      borrower: "رضا حسینی",
+      dueDate: "۱۴۰۴/۰۲/۲۶",
+      coverClass: "cover-night"
+    },
+    {
+      title: "انسان در جستجوی معنا",
+      author: "ویکتور فرانکل",
+      borrower: "سارا محمدی",
+      dueDate: "۱۴۰۴/۰۲/۲۴",
+      coverClass: "cover-bird"
+    },
+    {
+      title: "ملت عشق",
+      author: "الیف شافاک",
+      borrower: "امیرحسین رضایی",
+      dueDate: "۱۴۰۴/۰۲/۲۳",
+      coverClass: "cover-love"
+    }
+  ],
+  newBooks: [
+    { title: "سقوط", author: "آلبر کامو", date: "۱۴۰۴/۰۳/۲۱", coverClass: "cover-fall" },
+    { title: "بادبادک‌باز", author: "خالد حسینی", date: "۱۴۰۴/۰۳/۱۹", coverClass: "cover-kite" },
+    { title: "جزیره", author: "آلدوس هاکسلی", date: "۱۴۰۴/۰۲/۱۸", coverClass: "cover-island" },
+    { title: "شازده کوچولو", author: "آنتوان دوسنت...", date: "۱۴۰۴/۰۲/۱۶", coverClass: "cover-prince" },
+    { title: "خرده عادت‌ها", author: "جیمز کلیر", date: "۱۴۰۴/۰۱/۱۵", coverClass: "cover-atomic" }
+  ],
+  activities: [
+    { text: "امانت «ملت عشق» به امیرحسین رضایی", time: "امروز، ۱۰:۲۴", icon: "user", tone: "orange" },
+    { text: "بازگشت «گرگ و میش» توسط نرگس موسوی", time: "دیروز، ۱۸:۴۲", icon: "checkCircle", tone: "green" },
+    { text: "افزودن کتاب جدید «بادبادک‌باز»", time: "دیروز، ۱۶:۱۰", icon: "plusCircle", tone: "blue" },
+    { text: "امانت «انسان در جستجوی معنا» به سارا محمدی", time: "۱۴۰۴/۰۲/۳۰، ۱۲:۳۵", icon: "user", tone: "orange" },
+    { text: "ویرایش اطلاعات کتاب «شازده کوچولو»", time: "۱۴۰۴/۰۲/۲۹، ۰۹:۱۸", icon: "pen", tone: "blue" }
+  ]
 };
 
-const dom = {};
+const iconPaths = {
+  alertTriangle: '<path d="M10.3 3.1 1.8 17.6a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.1a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5Z"/>',
+  bookOpen: '<path d="M12 7v14"/><path d="M3 18.5A2.5 2.5 0 0 1 5.5 16H12V5H5.5A2.5 2.5 0 0 0 3 7.5v11Z"/><path d="M21 18.5A2.5 2.5 0 0 0 18.5 16H12V5h6.5A2.5 2.5 0 0 1 21 7.5v11Z"/>',
+  bookmark: '<path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5V22l-6-3-6 3V4.5Z"/>',
+  calendar: '<path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/>',
+  checkCircle: '<path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m9 11 3 3L22 4"/>',
+  chevronDown: '<path d="m6 9 6 6 6-6"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  lightbulb: '<path d="M15 14c.2-1 .8-1.8 1.5-2.6A6 6 0 1 0 7.5 11.4C8.2 12.2 8.8 13 9 14"/><path d="M9 18h6"/><path d="M10 22h4"/><path d="M10 14h4v4h-4z"/>',
+  pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5Z"/>',
+  plusCircle: '<circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/>',
+  plusSquare: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8"/><path d="M8 12h8"/>',
+  repeat: '<path d="m17 2 4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
+  search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  settings: '<path d="M12.2 2h-.4l-1 3.1a7 7 0 0 0-1.7 1L5.8 5 3.6 8.8l2.4 2.2a7 7 0 0 0 0 2L3.6 15.2 5.8 19l3.3-1.1a7 7 0 0 0 1.7 1l1 3.1h.4l1-3.1a7 7 0 0 0 1.7-1l3.3 1.1 2.2-3.8-2.4-2.2a7 7 0 0 0 0-2l2.4-2.2L18.2 5l-3.3 1.1a7 7 0 0 0-1.7-1L12.2 2Z"/><circle cx="12" cy="12" r="3"/>',
+  user: '<path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/>',
+  userPlus: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M16 11h6"/>',
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/>'
+};
 
-document.addEventListener("DOMContentLoaded", () => {
-  cacheDom();
-  initializeMotionPreference();
-  bindEvents();
-  bindFormFieldValidation();
-  updateActionButtons();
-  setDefaultBorrowDate();
-  refreshData();
-});
-
-function cacheDom() {
-  dom.totalBooksValue = document.getElementById("totalBooksValue");
-  dom.availableBooksValue = document.getElementById("availableBooksValue");
-  dom.borrowedBooksValue = document.getElementById("borrowedBooksValue");
-  dom.tableCountText = document.getElementById("tableCountText");
-
-  dom.searchInput = document.getElementById("searchInput");
-  dom.statusFilter = document.getElementById("statusFilter");
-
-  dom.addBookBtn = document.getElementById("addBookBtn");
-  dom.headerAddBookBtn = document.getElementById("headerAddBookBtn");
-  dom.editBookBtn = document.getElementById("editBookBtn");
-  dom.deleteBookBtn = document.getElementById("deleteBookBtn");
-  dom.borrowBookBtn = document.getElementById("borrowBookBtn");
-  dom.returnBookBtn = document.getElementById("returnBookBtn");
-  dom.refreshBtn = document.getElementById("refreshBtn");
-
-  dom.booksTable = document.getElementById("booksTable");
-  dom.booksTableBody = document.getElementById("booksTableBody");
-  dom.emptyState = document.getElementById("emptyState");
-  dom.tableSection = document.querySelector(".table-section");
-
-  dom.bookModalOverlay = document.getElementById("bookModalOverlay");
-  dom.bookModalTitle = document.getElementById("bookModalTitle");
-  dom.closeBookModalBtn = document.getElementById("closeBookModalBtn");
-  dom.cancelBookModalBtn = document.getElementById("cancelBookModalBtn");
-  dom.saveBookBtn = document.getElementById("saveBookBtn");
-  dom.bookForm = document.getElementById("bookForm");
-  dom.bookFormNotice = document.getElementById("bookFormNotice");
-  dom.bookIdInput = document.getElementById("bookIdInput");
-  dom.titleInput = document.getElementById("titleInput");
-  dom.authorInput = document.getElementById("authorInput");
-  dom.categoryInput = document.getElementById("categoryInput");
-  dom.publishYearInput = document.getElementById("publishYearInput");
-  dom.publisherInput = document.getElementById("publisherInput");
-  dom.descriptionInput = document.getElementById("descriptionInput");
-
-  dom.borrowModalOverlay = document.getElementById("borrowModalOverlay");
-  dom.borrowForm = document.getElementById("borrowForm");
-  dom.borrowFormNotice = document.getElementById("borrowFormNotice");
-  dom.borrowBookIdInput = document.getElementById("borrowBookIdInput");
-  dom.borrowBookName = document.getElementById("borrowBookName");
-  dom.borrowerNameInput = document.getElementById("borrowerNameInput");
-  dom.borrowDateInput = document.getElementById("borrowDateInput");
-  dom.closeBorrowModalBtn = document.getElementById("closeBorrowModalBtn");
-  dom.cancelBorrowModalBtn = document.getElementById("cancelBorrowModalBtn");
-
-  dom.dialogOverlay = document.getElementById("dialogOverlay");
-  dom.dialogCard = dom.dialogOverlay.querySelector(".dialog-card");
-  dom.dialogIcon = document.getElementById("dialogIcon");
-  dom.dialogTitle = document.getElementById("dialogTitle");
-  dom.dialogMessage = document.getElementById("dialogMessage");
-  dom.dialogCancelBtn = document.getElementById("dialogCancelBtn");
-  dom.dialogConfirmBtn = document.getElementById("dialogConfirmBtn");
-
-  dom.toastContainer = document.getElementById("toastContainer");
-  state.refreshButtonLabel =
-    dom.refreshBtn?.querySelector(".btn-text")?.textContent?.trim() || dom.refreshBtn?.textContent || "";
+function Icon(name, className = "") {
+  return `
+    <svg class="icon ${className}" viewBox="0 0 24 24" aria-hidden="true">
+      ${iconPaths[name] || ""}
+    </svg>
+  `;
 }
 
-function bindEvents() {
-  dom.searchInput.addEventListener("input", onSearchInput);
-  dom.statusFilter.addEventListener("change", refreshData);
+function getStats(isEmpty) {
+  if (isEmpty) {
+    return [
+      { title: "کل کتاب‌ها", value: "۰", subtitle: "هنوز کتابی ثبت نشده است", icon: "bookOpen", tone: "blue" },
+      { title: "کتاب‌های موجود", value: "۰", subtitle: "هنوز کتابی ثبت نشده است", icon: "checkCircle", tone: "green" },
+      { title: "امانت‌های فعال", value: "۰", subtitle: "هنوز امانتی ثبت نشده است", icon: "user", tone: "orange" },
+      { title: "کتاب‌های دیرکرد", value: "۰", subtitle: "هنوز موردی وجود ندارد", icon: "alertTriangle", tone: "red" }
+    ];
+  }
 
-  dom.addBookBtn.addEventListener("click", openAddBookModal);
-  dom.headerAddBookBtn?.addEventListener("click", openAddBookModal);
-  dom.editBookBtn.addEventListener("click", openEditBookModal);
-  dom.deleteBookBtn.addEventListener("click", onDeleteBook);
-  dom.borrowBookBtn.addEventListener("click", openBorrowModalFromSelection);
-  dom.returnBookBtn.addEventListener("click", onReturnBook);
-  dom.refreshBtn.addEventListener("click", refreshData);
+  return [
+    { title: "کل کتاب‌ها", value: "۵۴۸", unit: "کتاب", subtitle: "در کتابخانه شخصی شما", icon: "bookOpen", tone: "blue" },
+    { title: "کتاب‌های موجود", value: "۳۲۴", unit: "کتاب", subtitle: "از مجموع کتاب‌ها", icon: "checkCircle", tone: "green" },
+    { title: "امانت‌های فعال", value: "۱۲", unit: "کتاب", subtitle: "به ۶ نفر امانت داده شده", icon: "user", tone: "orange" },
+    { title: "کتاب‌های دیرکرد", value: "۷", unit: "کتاب", detail: "۳ امانت دیرکرد", icon: "alertTriangle", tone: "red", alert: true }
+  ];
+}
 
-  dom.bookForm.addEventListener("submit", onSubmitBookForm);
-  dom.borrowForm.addEventListener("submit", onSubmitBorrowForm);
+function DashboardPage() {
+  const isEmpty = dashboardData.books.length === 0;
 
-  dom.closeBookModalBtn.addEventListener("click", () => closeOverlay(dom.bookModalOverlay));
-  dom.cancelBookModalBtn.addEventListener("click", () => closeOverlay(dom.bookModalOverlay));
-  dom.closeBorrowModalBtn.addEventListener("click", () => closeOverlay(dom.borrowModalOverlay));
-  dom.cancelBorrowModalBtn.addEventListener("click", () => closeOverlay(dom.borrowModalOverlay));
+  return `
+    <div class="dashboard-shell${isEmpty ? " is-empty-dashboard" : ""}" dir="rtl">
+      ${Sidebar({ isEmpty })}
+      <main class="dashboard-main">
+        ${DashboardHeader({ isEmpty })}
+        <section class="stats-grid" aria-label="آمار کتابخانه">
+          ${getStats(isEmpty).map(StatsCard).join("")}
+        </section>
+        ${
+          isEmpty
+            ? `${EmptyDashboardHero()}<section class="empty-lower-grid">${EmptyStateCard("books")}${EmptyStateCard("activities")}${GettingStartedGuide()}</section>`
+            : `<section class="dashboard-grid dashboard-grid-middle">${QuickActions()}${DueBooks()}</section><section class="dashboard-grid dashboard-grid-bottom">${NewBooks()}${RecentActivities()}</section>`
+        }
+      </main>
+    </div>
+    <div id="toastHost" class="toast-host" aria-live="polite" aria-atomic="true"></div>
+  `;
+}
 
-  dom.bookModalOverlay.addEventListener("click", (event) => {
-    if (event.target === dom.bookModalOverlay) {
-      closeOverlay(dom.bookModalOverlay);
+function Sidebar({ isEmpty }) {
+  const menu = dashboardData.menuItems.map((item) => `
+    <button class="sidebar-link${item.active ? " is-active" : ""}" type="button" data-action="nav" data-label="${item.label}">
+      ${Icon(item.icon)}
+      <span>${item.label}</span>
+    </button>
+  `).join("");
+
+  return `
+    <aside class="app-sidebar" aria-label="ناوبری اصلی">
+      <div class="sidebar-top">
+        <div class="brand-block">
+          <div class="brand-mark">${Icon("bookOpen")}</div>
+          <div>
+            <p>سامانه مدیریت</p>
+            <strong>کتابخانه شخصی</strong>
+          </div>
+        </div>
+        <nav class="sidebar-nav">
+          ${menu}
+        </nav>
+      </div>
+      ${isEmpty ? `<div class="sidebar-status"><span>نسخه ۱.۰.۰</span><strong><i></i>آنلاین</strong></div>` : ""}
+    </aside>
+  `;
+}
+
+function DashboardHeader({ isEmpty }) {
+  return `
+    <header class="dashboard-header">
+      <div class="page-heading">
+        <h1>داشبورد</h1>
+        <p>${isEmpty ? "شروع مدیریت کتابخانه شخصی شما" : "نمای کلی از وضعیت کتابخانه شخصی شما"}</p>
+      </div>
+      <div class="header-actions" aria-label="ابزارهای داشبورد">
+        <button class="primary-action" type="button" data-action="add-book">
+          <span class="plus-glyph">+</span>
+          <span>${isEmpty ? "افزودن اولین کتاب" : "افزودن کتاب"}</span>
+        </button>
+        ${
+          isEmpty
+            ? `<button class="secondary-action" type="button" data-action="settings">${Icon("settings")}<span>تنظیمات اولیه</span></button>`
+            : `<button class="filter-action" type="button" data-action="filter">${Icon("chevronDown", "filter-chevron")}<span>فیلتر</span></button>`
+        }
+        <label class="search-field" for="dashboardSearch">
+          ${Icon("search")}
+          <input id="dashboardSearch" type="search" placeholder="جستجو در عنوان، نویسنده، ناشر، ISBN..." autocomplete="off" />
+        </label>
+      </div>
+    </header>
+  `;
+}
+
+function StatsCard(card) {
+  return `
+    <article class="stats-card stats-card-${card.tone}">
+      <div class="stats-copy">
+        <h2>${card.title}</h2>
+        <strong>${card.value}</strong>
+        ${card.unit ? `<span>${card.unit}</span>` : ""}
+        ${card.subtitle ? `<p class="${card.alert ? "danger-note" : ""}">${card.subtitle}</p>` : ""}
+        ${card.detail ? `<small>${card.detail}</small>` : ""}
+      </div>
+      <div class="stats-icon">${Icon(card.icon)}</div>
+    </article>
+  `;
+}
+
+function EmptyDashboardHero() {
+  return `
+    <section class="empty-hero panel">
+      <div class="empty-illustration" aria-hidden="true">
+        <span class="spark spark-a"></span>
+        <span class="spark spark-b"></span>
+        <span class="empty-shelf">
+          <i></i><i></i><i></i><i></i>
+        </span>
+        <span class="empty-plant"></span>
+        <span class="empty-box"><i></i></span>
+        <span class="doodle-line"></span>
+      </div>
+      <div class="empty-hero-copy">
+        <h2>هنوز کتابی ثبت نشده است</h2>
+        <p>به نظر می‌رسد کتابخانه شما هنوز خالی است.</p>
+        <p>با افزودن اولین کتاب و ثبت امانت‌ها، اطلاعات و فعالیت‌ها در اینجا نمایش داده می‌شود.</p>
+        <div class="empty-hero-actions">
+          <button class="primary-action" type="button" data-action="add-book"><span class="plus-glyph">+</span><span>افزودن اولین کتاب</span></button>
+          <button class="secondary-action" type="button" data-action="borrowers">${Icon("userPlus")}<span>تعریف امانت‌گیرنده</span></button>
+          <button class="secondary-action" type="button" data-action="settings">${Icon("settings")}<span>تنظیمات برنامه</span></button>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function QuickActions() {
+  const actions = dashboardData.quickActions.map((action) => `
+    <button class="quick-action" type="button" data-action="${action.action}">
+      ${Icon(action.icon)}
+      <span>${action.label}</span>
+    </button>
+  `).join("");
+
+  return `
+    <section class="panel quick-panel">
+      <div class="panel-header">
+        <h2>دسترسی سریع</h2>
+      </div>
+      <div class="quick-grid">${actions}</div>
+    </section>
+  `;
+}
+
+function DueBooks() {
+  return `
+    <section class="panel due-panel">
+      <div class="panel-header">
+        <h2>کتاب‌های در حال سررسید</h2>
+        <button class="pill-button" type="button" data-action="view-due">همه</button>
+      </div>
+      <div class="due-books-grid">
+        ${dashboardData.dueBooks.map(DueBookCard).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function DueBookCard(book) {
+  return `
+    <article class="due-book-card">
+      <div class="book-cover due-cover ${book.coverClass}">
+        <span>${book.title}</span>
+        <small>${book.author}</small>
+      </div>
+      <div class="due-book-copy">
+        <h3>${book.title}</h3>
+        <p>${book.author}</p>
+        <span class="borrower-line">${Icon("user")} ${book.borrower}</span>
+        <span class="date-badge">${Icon("calendar")} ${book.dueDate}</span>
+      </div>
+    </article>
+  `;
+}
+
+function NewBooks() {
+  return `
+    <section class="panel new-books-panel">
+      <div class="panel-header">
+        <h2>جدیدترین کتاب‌ها</h2>
+        <button class="pill-button" type="button" data-action="view-books">همه</button>
+      </div>
+      <div class="new-books-track">${dashboardData.newBooks.map(NewBookTile).join("")}</div>
+    </section>
+  `;
+}
+
+function NewBookTile(book) {
+  return `
+    <article class="new-book-tile">
+      <div class="book-cover new-cover ${book.coverClass}">
+        <span>${book.title}</span>
+        <small>${book.author}</small>
+      </div>
+      <h3>${book.title}</h3>
+      <p>${book.author}</p>
+      <time>${book.date}</time>
+      <span class="bookmark-mark">${Icon("bookmark")}</span>
+    </article>
+  `;
+}
+
+function RecentActivities() {
+  const rows = dashboardData.activities.map((activity) => `
+    <li class="activity-row">
+      <span class="activity-icon activity-${activity.tone}">${Icon(activity.icon)}</span>
+      <p>${activity.text}</p>
+      <time>${activity.time}</time>
+    </li>
+  `).join("");
+
+  return `
+    <section class="panel activities-panel">
+      <div class="panel-header">
+        <h2>فعالیت‌های اخیر</h2>
+      </div>
+      <ul class="activity-list">${rows}</ul>
+      <button class="activity-more" type="button" data-action="view-activities">
+        ${Icon("clock")}
+        <span>مشاهده همه فعالیت‌ها</span>
+      </button>
+    </section>
+  `;
+}
+
+function EmptyStateCard(type) {
+  const config = {
+    books: {
+      title: "کتاب‌های اخیر",
+      pill: "هیچ موردی وجود ندارد",
+      icon: "bookOpen",
+      heading: "هنوز کتابی اضافه نکرده‌اید",
+      text: "بعد از افزودن کتاب‌ها، آخرین موارد در اینجا نمایش داده می‌شود.",
+      button: "افزودن اولین کتاب",
+      action: "add-book",
+      buttonIcon: "plusCircle"
+    },
+    activities: {
+      title: "فعالیت‌های اخیر",
+      pill: "هیچ فعالیتی وجود ندارد",
+      icon: "clock",
+      heading: "هنوز فعالیتی ثبت نشده است",
+      text: "بعد از ثبت امانت‌ها و عملیات، فعالیت‌های اخیر در اینجا نمایش داده می‌شود.",
+      button: "ثبت اولین امانت",
+      action: "borrow-book",
+      buttonIcon: "userPlus"
     }
-  });
+  }[type];
 
-  dom.borrowModalOverlay.addEventListener("click", (event) => {
-    if (event.target === dom.borrowModalOverlay) {
-      closeOverlay(dom.borrowModalOverlay);
-    }
-  });
-
-  dom.dialogConfirmBtn.addEventListener("click", () => resolveDialog(true));
-  dom.dialogCancelBtn.addEventListener("click", () => resolveDialog(false));
-  dom.dialogOverlay.addEventListener("click", (event) => {
-    if (event.target !== dom.dialogOverlay) {
-      return;
-    }
-    const canCancel = dom.dialogOverlay.dataset.cancelable === "yes";
-    resolveDialog(!canCancel);
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape") {
-      return;
-    }
-
-    if (isOverlayOpen(dom.dialogOverlay)) {
-      const canCancel = dom.dialogOverlay.dataset.cancelable === "yes";
-      resolveDialog(!canCancel);
-      return;
-    }
-
-    if (isOverlayOpen(dom.borrowModalOverlay)) {
-      closeOverlay(dom.borrowModalOverlay);
-      return;
-    }
-
-    if (isOverlayOpen(dom.bookModalOverlay)) {
-      closeOverlay(dom.bookModalOverlay);
-    }
-  });
+  return `
+    <section class="panel empty-state-card">
+      <div class="panel-header">
+        <h2>${config.title}</h2>
+        <span class="empty-pill">${config.pill}</span>
+      </div>
+      <div class="empty-card-body">
+        <span class="empty-card-icon">${Icon(config.icon)}</span>
+        <h3>${config.heading}</h3>
+        <p>${config.text}</p>
+        <button class="outline-action" type="button" data-action="${config.action}">
+          ${Icon(config.buttonIcon)}
+          <span>${config.button}</span>
+        </button>
+      </div>
+    </section>
+  `;
 }
 
-function initializeMotionPreference() {
-  const query = typeof window.matchMedia === "function"
-    ? window.matchMedia("(prefers-reduced-motion: reduce)")
-    : null;
+function GettingStartedGuide() {
+  const steps = [
+    ["افزودن اولین کتاب", "اطلاعات کتاب‌ها را ثبت کنید."],
+    ["ثبت امانت‌گیرندگان", "اطلاعات افراد امانت‌گیرنده را اضافه کنید."],
+    ["ثبت اولین امانت", "کتابی را به امانت دهید و مدیریت را شروع کنید."]
+  ];
 
-  if (!query) {
-    return;
-  }
-
-  const applyPreference = () => {
-    state.reduceMotion = query.matches;
-    document.body.classList.toggle("reduce-motion", state.reduceMotion);
-  };
-
-  applyPreference();
-
-  if (typeof query.addEventListener === "function") {
-    query.addEventListener("change", applyPreference);
-    return;
-  }
-
-  if (typeof query.addListener === "function") {
-    query.addListener(applyPreference);
-  }
+  return `
+    <section class="panel guide-card">
+      <div class="guide-header">
+        <h2>راهنمای شروع</h2>
+        <p>برای شروع، این مراحل ساده را دنبال کنید.</p>
+      </div>
+      <ol class="guide-steps">
+        ${steps.map((step, index) => `
+          <li>
+            <span>${toPersianNumber(index + 1)}</span>
+            <div>
+              <strong>${step[0]}</strong>
+              <p>${step[1]}</p>
+            </div>
+          </li>
+        `).join("")}
+      </ol>
+      <div class="guide-hint">
+        ${Icon("lightbulb")}
+        <span>هر زمان خواستید، می‌توانید این راهنما را از بخش راهنما مشاهده کنید.</span>
+      </div>
+    </section>
+  `;
 }
 
-function bindFormFieldValidation() {
-  bindFieldValidation(dom.titleInput, () => {
-    if (!dom.titleInput.value.trim()) {
-      return "عنوان کتاب را وارد کنید.";
-    }
-    return "";
-  });
-
-  bindFieldValidation(dom.authorInput, () => {
-    if (!dom.authorInput.value.trim()) {
-      return "نام نویسنده الزامی است.";
-    }
-    return "";
-  });
-
-  bindFieldValidation(dom.publishYearInput, () => validatePublishYear(dom.publishYearInput.value.trim()));
-
-  bindFieldValidation(dom.borrowerNameInput, () => {
-    const value = dom.borrowerNameInput.value.trim();
-    if (!value) {
-      return "نام امانت‌گیرنده را وارد کنید.";
-    }
-    if (value.length < 3) {
-      return "نام امانت‌گیرنده باید حداقل ۳ کاراکتر باشد.";
-    }
-    return "";
-  });
-
-  bindFieldValidation(dom.borrowDateInput, () => {
-    if (!dom.borrowDateInput.value) {
-      return "تاریخ امانت را مشخص کنید.";
-    }
-    return "";
-  });
-}
-
-function bindFieldValidation(input, validator) {
-  if (!input || typeof validator !== "function") {
-    return;
-  }
-
-  input.addEventListener("input", () => {
-    clearFormNotice(input.form === dom.bookForm ? dom.bookFormNotice : dom.borrowFormNotice);
-    const message = validator();
-    if (message) {
-      setFieldError(input, message);
-      return;
-    }
-    setFieldValid(input);
-  });
-
-  input.addEventListener("blur", () => {
-    const message = validator();
-    if (message) {
-      setFieldError(input, message);
-      return;
-    }
-    setFieldValid(input);
-  });
-}
-
-function ensureLibraryService() {
-  if (!libraryService || typeof libraryService.fetchLibraryData !== "function") {
-    throw new Error("سرویس کتابخانه در دسترس نیست.");
-  }
-  return libraryService;
-}
-
-function getActiveFilters() {
-  return {
-    search: dom.searchInput.value || "",
-    status: dom.statusFilter.value || ""
-  };
-}
-
-function setRefreshBusy(isBusy) {
-  state.refreshInProgress = isBusy;
-  dom.refreshBtn.disabled = isBusy;
-  dom.refreshBtn.classList.toggle("is-loading", isBusy);
-  dom.refreshBtn.setAttribute("aria-busy", isBusy ? "true" : "false");
-  dom.tableSection?.classList.toggle("is-refreshing", isBusy);
-
-  if (!isBusy && state.refreshButtonLabel) {
-    const refreshText = dom.refreshBtn.querySelector(".btn-text");
-    if (refreshText) {
-      refreshText.textContent = state.refreshButtonLabel;
-      return;
-    }
-    dom.refreshBtn.textContent = state.refreshButtonLabel;
-  }
-}
-
-async function refreshData() {
-  const requestId = ++state.refreshRequestId;
-  setRefreshBusy(true);
-
-  try {
-    const service = ensureLibraryService();
-    const { books, summary } = await service.fetchLibraryData(getActiveFilters());
-
-    if (requestId !== state.refreshRequestId) {
-      return;
-    }
-
-    state.books = Array.isArray(books) ? books : [];
-
-    if (!state.books.some((book) => book.id === state.selectedBookId)) {
-      state.selectedBookId = null;
-    }
-
-    renderSummary(summary || {});
-    renderTable({ animateRows: true });
-    updateActionButtons();
-  } catch (error) {
-    if (requestId !== state.refreshRequestId) {
-      return;
-    }
-
-    await showDialog({
-      title: "خطا",
-      message: getFriendlyError(error),
-      type: "danger",
-      confirmText: "متوجه شدم"
-    });
-  } finally {
-    if (requestId === state.refreshRequestId) {
-      setRefreshBusy(false);
-    }
-  }
-}
-
-function renderSummary(summary) {
-  dom.totalBooksValue.textContent = toPersianDigits(summary.total_books || 0);
-  dom.availableBooksValue.textContent = toPersianDigits(summary.available_books || 0);
-  dom.borrowedBooksValue.textContent = toPersianDigits(summary.borrowed_books || 0);
-}
-
-function renderTable(options = {}) {
-  const animateRows = Boolean(options.animateRows) && !state.reduceMotion;
-  dom.booksTableBody.innerHTML = "";
-
-  dom.tableCountText.textContent = `${toPersianDigits(state.books.length)} کتاب ثبت‌شده`;
-
-  if (state.books.length === 0) {
-    dom.emptyState.classList.remove("hidden");
-    return;
-  }
-
-  dom.emptyState.classList.add("hidden");
-
-  state.books.forEach((book, index) => {
-    const row = document.createElement("tr");
-    row.dataset.id = String(book.id);
-
-    if (animateRows) {
-      row.classList.add("row-enter");
-      row.style.setProperty("--row-delay", `${Math.min(index, 8) * 22}ms`);
-    }
-
-    if (state.selectedBookId === book.id) {
-      row.classList.add("selected");
-    }
-
-    row.appendChild(createTextCell(book.title));
-    row.appendChild(createTextCell(book.author));
-    row.appendChild(createTextCell(book.category));
-    row.appendChild(createTextCell(toPersianDigits(book.publish_year ?? "—")));
-    row.appendChild(createTextCell(book.publisher));
-    row.appendChild(createStatusCell(book.status));
-    row.appendChild(createTextCell(book.borrower_name));
-    row.appendChild(createTextCell(formatBorrowDate(book.borrow_date)));
-
-    row.addEventListener("click", () => {
-      state.selectedBookId = state.selectedBookId === book.id ? null : book.id;
-      renderTable();
-      updateActionButtons();
-    });
-
-    dom.booksTableBody.appendChild(row);
-  });
-}
-
-function createTextCell(value) {
-  const td = document.createElement("td");
-  const span = document.createElement("span");
-  span.className = "cell-text";
-
-  const text = value === null || value === undefined || value === "" ? "—" : String(value);
-  span.textContent = text;
-  span.title = text;
-  td.appendChild(span);
-
-  return td;
-}
-
-function createStatusCell(status) {
-  const td = document.createElement("td");
-  const badge = document.createElement("span");
-  const isAvailable = status === STATUS_AVAILABLE;
-  badge.className = `status-badge ${isAvailable ? "status-available" : "status-borrowed"}`;
-  badge.textContent = status;
-  td.appendChild(badge);
-  return td;
-}
-
-function updateActionButtons() {
-  const selectedBook = getSelectedBook();
-  const hasSelection = Boolean(selectedBook);
-
-  dom.editBookBtn.disabled = !hasSelection;
-  dom.deleteBookBtn.disabled = !hasSelection;
-  dom.borrowBookBtn.disabled = !hasSelection || selectedBook.status !== STATUS_AVAILABLE;
-  dom.returnBookBtn.disabled = !hasSelection || selectedBook.status !== STATUS_BORROWED;
-}
-
-function openAddBookModal() {
-  state.bookModalMode = "add";
-  dom.bookModalTitle.textContent = "افزودن کتاب جدید";
-  dom.saveBookBtn.textContent = "ذخیره کتاب";
-  dom.bookForm.reset();
-  dom.bookIdInput.value = "";
-  clearFormValidation(dom.bookForm, dom.bookFormNotice);
-  openOverlay(dom.bookModalOverlay);
-  dom.titleInput.focus();
-}
-
-async function openEditBookModal() {
-  const selectedBook = await requireSelection();
-  if (!selectedBook) {
-    return;
-  }
-
-  state.bookModalMode = "edit";
-  dom.bookModalTitle.textContent = "ویرایش اطلاعات کتاب";
-  dom.saveBookBtn.textContent = "ثبت تغییرات";
-
-  dom.bookIdInput.value = String(selectedBook.id);
-  dom.titleInput.value = selectedBook.title || "";
-  dom.authorInput.value = selectedBook.author || "";
-  dom.categoryInput.value = selectedBook.category || "";
-  dom.publishYearInput.value = selectedBook.publish_year || "";
-  dom.publisherInput.value = selectedBook.publisher || "";
-  dom.descriptionInput.value = selectedBook.description || "";
-
-  clearFormValidation(dom.bookForm, dom.bookFormNotice);
-  openOverlay(dom.bookModalOverlay);
-  dom.titleInput.focus();
-}
-
-async function onSubmitBookForm(event) {
-  event.preventDefault();
-
-  clearFormValidation(dom.bookForm, dom.bookFormNotice);
-
-  const title = dom.titleInput.value.trim();
-  const author = dom.authorInput.value.trim();
-  const category = dom.categoryInput.value.trim();
-  const publishYearRaw = dom.publishYearInput.value.trim();
-  const publisher = dom.publisherInput.value.trim();
-  const description = dom.descriptionInput.value.trim();
-
-  const errors = [];
-
-  if (!title) {
-    errors.push({ input: dom.titleInput, message: "عنوان کتاب را وارد کنید." });
-  }
-
-  if (!author) {
-    errors.push({ input: dom.authorInput, message: "نام نویسنده را وارد کنید." });
-  }
-
-  const yearError = validatePublishYear(publishYearRaw);
-  if (yearError) {
-    errors.push({ input: dom.publishYearInput, message: yearError });
-  }
-
-  if (errors.length > 0) {
-    errors.forEach(({ input, message }) => setFieldError(input, message));
-    showFormNotice(dom.bookFormNotice, "لطفا خطاهای مشخص‌شده را اصلاح کنید و دوباره تلاش کنید.", "error");
-    const firstInput = errors[0]?.input;
-    if (firstInput) {
-      firstInput.focus();
-    }
-    showToast({
-      type: "warning",
-      title: "نیاز به اصلاح فرم",
-      message: "پیش از ذخیره، موارد الزامی را کامل کنید."
-    });
-    return;
-  }
-
-  [dom.titleInput, dom.authorInput, dom.publishYearInput]
-    .filter((input) => input.value.trim())
-    .forEach(setFieldValid);
-
-  const payload = {
-    title,
-    author,
-    category,
-    publish_year: publishYearRaw ? Number(publishYearRaw) : null,
-    publisher,
-    description
-  };
-
-  const defaultSubmitText = dom.saveBookBtn.textContent;
-  setButtonBusy(dom.saveBookBtn, true, state.bookModalMode === "add" ? "در حال ذخیره..." : "در حال ثبت تغییرات...");
-
-  try {
-    if (state.bookModalMode === "add") {
-      await ensureLibraryService().addBook(payload);
-      showToast({
-        type: "success",
-        title: "ثبت موفق",
-        message: "کتاب جدید با موفقیت به کتابخانه اضافه شد."
-      });
-    } else {
-      const editingId = Number(dom.bookIdInput.value);
-      if (!Number.isInteger(editingId) || editingId <= 0) {
-        throw new Error("برای ویرایش، باید یک کتاب معتبر انتخاب شود.");
-      }
-
-      payload.id = editingId;
-      await ensureLibraryService().updateBook(payload);
-      showToast({
-        type: "success",
-        title: "ویرایش موفق",
-        message: "اطلاعات کتاب با موفقیت به‌روزرسانی شد."
-      });
-    }
-
-    closeOverlay(dom.bookModalOverlay);
-    await refreshData();
-  } catch (error) {
-    showFormNotice(dom.bookFormNotice, "ثبت اطلاعات انجام نشد. لطفا دوباره تلاش کنید.", "error");
-    await showDialog({
-      title: "خطا در ثبت اطلاعات",
-      message: getFriendlyError(error),
-      type: "danger",
-      confirmText: "متوجه شدم"
-    });
-  } finally {
-    setButtonBusy(dom.saveBookBtn, false, defaultSubmitText);
-  }
-}
-
-async function onDeleteBook() {
-  const selectedBook = await requireSelection();
-  if (!selectedBook) {
-    return;
-  }
-
-  const confirmed = await showDialog({
-    title: "تایید حذف کتاب",
-    message: `آیا از حذف کتاب «${selectedBook.title}» مطمئن هستید؟ این عملیات قابل بازگشت نیست.`,
-    type: "warning",
-    confirmText: "حذف شود",
-    cancelText: "انصراف",
-    cancelable: true
-  });
-
-  if (!confirmed) {
-    return;
-  }
-
-  try {
-    await ensureLibraryService().deleteBook(selectedBook.id);
-    state.selectedBookId = null;
-    await refreshData();
-    showToast({
-      type: "success",
-      title: "حذف انجام شد",
-      message: "کتاب انتخاب‌شده از فهرست حذف شد."
-    });
-  } catch (error) {
-    await showDialog({
-      title: "خطا در حذف کتاب",
-      message: getFriendlyError(error),
-      type: "danger",
-      confirmText: "متوجه شدم"
-    });
-  }
-}
-
-async function openBorrowModalFromSelection() {
-  const selectedBook = await requireSelection();
-  if (!selectedBook) {
-    return;
-  }
-
-  if (selectedBook.status !== STATUS_AVAILABLE) {
-    await showDialog({
-      title: "امکان ثبت امانت وجود ندارد",
-      message: "این کتاب هم‌اکنون در وضعیت امانت است و نمی‌توان امانت جدید ثبت کرد.",
-      type: "warning",
-      confirmText: "متوجه شدم"
-    });
-    return;
-  }
-
-  dom.borrowForm.reset();
-  clearFormValidation(dom.borrowForm, dom.borrowFormNotice);
-  setDefaultBorrowDate();
-  dom.borrowBookIdInput.value = String(selectedBook.id);
-  dom.borrowBookName.textContent = `کتاب انتخاب‌شده: «${selectedBook.title}»`;
-
-  openOverlay(dom.borrowModalOverlay);
-  dom.borrowerNameInput.focus();
-}
-
-async function onSubmitBorrowForm(event) {
-  event.preventDefault();
-
-  clearFormValidation(dom.borrowForm, dom.borrowFormNotice);
-
-  const borrowerName = dom.borrowerNameInput.value.trim();
-  const borrowDate = dom.borrowDateInput.value;
-  const selectedBookId = Number(dom.borrowBookIdInput.value);
-  const hasValidBookId = Number.isInteger(selectedBookId) && selectedBookId > 0;
-
-  const errors = [];
-
-  if (!borrowerName) {
-    errors.push({ input: dom.borrowerNameInput, message: "نام امانت‌گیرنده را وارد کنید." });
-  } else if (borrowerName.length < 3) {
-    errors.push({ input: dom.borrowerNameInput, message: "نام امانت‌گیرنده باید حداقل ۳ کاراکتر باشد." });
-  }
-
-  if (!borrowDate) {
-    errors.push({ input: dom.borrowDateInput, message: "تاریخ امانت را مشخص کنید." });
-  }
-
-  if (!hasValidBookId) {
-    showFormNotice(dom.borrowFormNotice, "پیش از ثبت امانت، یک کتاب معتبر انتخاب کنید.", "error");
-    await showDialog({
-      title: "انتخاب کتاب",
-      message: "برای ثبت امانت، انتخاب یک کتاب ضروری است.",
-      type: "warning",
-      confirmText: "متوجه شدم"
-    });
-    return;
-  }
-
-  if (errors.length > 0) {
-    errors.forEach(({ input, message }) => setFieldError(input, message));
-    showFormNotice(dom.borrowFormNotice, "برای ثبت امانت، تکمیل تمام فیلدهای الزامی ضروری است.", "error");
-    const firstInput = errors[0]?.input;
-    if (firstInput) {
-      firstInput.focus();
-    }
-    showToast({
-      type: "warning",
-      title: "فرم ناقص است",
-      message: "لطفا اطلاعات امانت را کامل کنید."
-    });
-    return;
-  }
-
-  setFieldValid(dom.borrowerNameInput);
-  setFieldValid(dom.borrowDateInput);
-
-  const submitBtn = dom.borrowForm.querySelector('button[type="submit"]');
-  const defaultSubmitText = submitBtn.textContent;
-  setButtonBusy(submitBtn, true, "در حال ثبت...");
-
-  try {
-    await ensureLibraryService().borrowBook({
-      id: selectedBookId,
-      borrower_name: borrowerName,
-      borrow_date: borrowDate
-    });
-
-    closeOverlay(dom.borrowModalOverlay);
-    await refreshData();
-    showToast({
-      type: "success",
-      title: "امانت ثبت شد",
-      message: "اطلاعات امانت کتاب با موفقیت ثبت گردید."
-    });
-  } catch (error) {
-    showFormNotice(dom.borrowFormNotice, "ثبت امانت انجام نشد. لطفا دوباره تلاش کنید.", "error");
-    await showDialog({
-      title: "خطا در ثبت امانت",
-      message: getFriendlyError(error),
-      type: "danger",
-      confirmText: "متوجه شدم"
-    });
-  } finally {
-    setButtonBusy(submitBtn, false, defaultSubmitText);
-  }
-}
-
-async function onReturnBook() {
-  const selectedBook = await requireSelection();
-  if (!selectedBook) {
-    return;
-  }
-
-  if (selectedBook.status !== STATUS_BORROWED) {
-    await showDialog({
-      title: "بازگردانی امکان‌پذیر نیست",
-      message: "این کتاب در وضعیت امانت قرار ندارد.",
-      type: "warning",
-      confirmText: "متوجه شدم"
-    });
-    return;
-  }
-
-  const confirmed = await showDialog({
-    title: "تایید بازگردانی",
-    message: `آیا بازگردانی کتاب «${selectedBook.title}» ثبت شود؟`,
-    type: "info",
-    confirmText: "ثبت بازگردانی",
-    cancelText: "انصراف",
-    cancelable: true
-  });
-
-  if (!confirmed) {
-    return;
-  }
-
-  try {
-    await ensureLibraryService().returnBook(selectedBook.id);
-    await refreshData();
-    showToast({
-      type: "success",
-      title: "بازگردانی ثبت شد",
-      message: "وضعیت کتاب به «موجود» تغییر کرد."
-    });
-  } catch (error) {
-    await showDialog({
-      title: "خطا در بازگردانی",
-      message: getFriendlyError(error),
-      type: "danger",
-      confirmText: "متوجه شدم"
-    });
-  }
-}
-
-async function requireSelection() {
-  const selectedBook = getSelectedBook();
-  if (!selectedBook) {
-    await showDialog({
-      title: "انتخاب کتاب",
-      message: "ابتدا یک کتاب از جدول انتخاب کنید، سپس عملیات موردنظر را انجام دهید.",
-      type: "warning",
-      confirmText: "متوجه شدم"
-    });
-    return null;
-  }
-  return selectedBook;
-}
-
-function getSelectedBook() {
-  return state.books.find((book) => book.id === state.selectedBookId) || null;
-}
-
-function onSearchInput() {
-  clearTimeout(state.searchDebounceTimer);
-  state.searchDebounceTimer = setTimeout(() => {
-    refreshData();
-  }, 250);
-}
-
-function openOverlay(overlay) {
-  clearOverlayTimer(overlay);
-  overlay.classList.remove("hidden", "is-closing");
-  requestAnimationFrame(() => {
-    overlay.classList.add("is-open");
-    overlay.setAttribute("aria-hidden", "false");
-  });
-}
-
-function closeOverlay(overlay) {
-  clearOverlayTimer(overlay);
-  overlay.classList.remove("is-open");
-  overlay.classList.add("is-closing");
-  overlay.setAttribute("aria-hidden", "true");
-
-  const timer = setTimeout(() => {
-    overlay.classList.add("hidden");
-    overlay.classList.remove("is-closing");
-    state.overlayTimers.delete(overlay);
-  }, OVERLAY_CLOSE_MS);
-
-  state.overlayTimers.set(overlay, timer);
-}
-
-function clearOverlayTimer(overlay) {
-  if (!state.overlayTimers.has(overlay)) {
-    return;
-  }
-
-  clearTimeout(state.overlayTimers.get(overlay));
-  state.overlayTimers.delete(overlay);
-}
-
-function isOverlayOpen(overlay) {
-  return !overlay.classList.contains("hidden") && overlay.classList.contains("is-open");
-}
-
-function showDialog(options = {}) {
-  return new Promise((resolve) => {
-    if (state.dialogResolver) {
-      const previousResolver = state.dialogResolver;
-      state.dialogResolver = null;
-      previousResolver(false);
-    }
-
-    const {
-      title = "پیام سامانه",
-      message = "",
-      type = "info",
-      confirmText = "تایید",
-      cancelText = "انصراف",
-      cancelable = false
-    } = options;
-
-    const dialogTypes = {
-      info: { icon: "i", className: "dialog-card-info", buttonClass: "btn-primary" },
-      warning: { icon: "!", className: "dialog-card-warning", buttonClass: "btn-primary" },
-      danger: { icon: "×", className: "dialog-card-danger", buttonClass: "btn-danger" },
-      success: { icon: "✓", className: "dialog-card-success", buttonClass: "btn-secondary" }
-    };
-
-    const style = dialogTypes[type] || dialogTypes.info;
-
-    dom.dialogTitle.textContent = title;
-    dom.dialogMessage.textContent = message;
-    dom.dialogConfirmBtn.textContent = confirmText;
-    dom.dialogCancelBtn.textContent = cancelText;
-    dom.dialogOverlay.dataset.cancelable = cancelable ? "yes" : "no";
-    dom.dialogCancelBtn.classList.toggle("hidden", !cancelable);
-
-    dom.dialogCard.classList.remove(
-      "dialog-card-info",
-      "dialog-card-warning",
-      "dialog-card-danger",
-      "dialog-card-success"
-    );
-    dom.dialogCard.classList.add(style.className);
-
-    dom.dialogConfirmBtn.classList.remove("btn-primary", "btn-secondary", "btn-danger");
-    dom.dialogConfirmBtn.classList.add(style.buttonClass);
-
-    dom.dialogIcon.textContent = style.icon;
-
-    state.dialogResolver = resolve;
-    openOverlay(dom.dialogOverlay);
-
-    setTimeout(() => {
-      dom.dialogConfirmBtn.focus();
-    }, 20);
-  });
-}
-
-function resolveDialog(result) {
-  if (!state.dialogResolver) {
-    return;
-  }
-
-  const resolver = state.dialogResolver;
-  state.dialogResolver = null;
-  closeOverlay(dom.dialogOverlay);
-  resolver(result);
-}
-
-function showToast(input, fallbackType = "info") {
-  const payload =
-    typeof input === "string"
-      ? { message: input, type: fallbackType }
-      : {
-          type: input?.type || fallbackType,
-          title: input?.title,
-          message: input?.message || "",
-          duration: input?.duration
-        };
-
-  const type = payload.type === "danger" ? "error" : payload.type;
-  const meta = getToastMeta(type);
-  const toast = document.createElement("article");
-  toast.className = `toast ${type}`;
-
-  const inner = document.createElement("div");
-  inner.className = "toast-inner";
-
-  const icon = document.createElement("span");
-  icon.className = "toast-icon";
-  icon.textContent = meta.icon;
-
-  const content = document.createElement("div");
-
-  const title = document.createElement("p");
-  title.className = "toast-title";
-  title.textContent = payload.title || meta.title;
-
-  const message = document.createElement("p");
-  message.className = "toast-message";
-  message.textContent = payload.message;
-
-  content.appendChild(title);
-  content.appendChild(message);
-  inner.appendChild(icon);
-  inner.appendChild(content);
-
-  const progress = document.createElement("span");
-  progress.className = "toast-progress";
-
-  toast.appendChild(inner);
-  toast.appendChild(progress);
-  dom.toastContainer.appendChild(toast);
-
-  const duration = Number(payload.duration) > 1200 ? Number(payload.duration) : 2600;
-  progress.style.animationDuration = `${duration}ms`;
-
-  setTimeout(() => {
-    toast.style.opacity = "0";
-    toast.style.transform = "translateY(10px) scale(0.98)";
-    setTimeout(() => toast.remove(), 220);
-  }, duration);
-}
-
-function getToastMeta(type) {
-  if (type === "success") {
-    return { icon: "✓", title: "موفق" };
-  }
-  if (type === "error" || type === "danger") {
-    return { icon: "×", title: "خطا" };
-  }
-  if (type === "warning") {
-    return { icon: "!", title: "هشدار" };
-  }
-  return { icon: "i", title: "اطلاع" };
-}
-
-function setButtonBusy(button, busy, busyText = "") {
-  if (!button) {
-    return;
-  }
-
-  button.disabled = busy;
-  if (busy && busyText) {
-    button.textContent = busyText;
-  }
-}
-
-function clearFormValidation(form, noticeElement) {
-  if (!form) {
-    return;
-  }
-
-  form.querySelectorAll(".form-field").forEach((field) => {
-    field.classList.remove("has-error", "has-valid");
-  });
-
-  form.querySelectorAll(".field-error").forEach((node) => {
-    node.textContent = "";
-  });
-
-  clearFormNotice(noticeElement);
-}
-
-function setFieldError(input, message) {
-  const field = input?.closest(".form-field");
-  const errorNode = document.getElementById(`${input.id}Error`);
-
-  if (field) {
-    field.classList.add("has-error");
-    field.classList.remove("has-valid");
-  }
-
-  if (errorNode) {
-    errorNode.textContent = message;
-  }
-
-  input?.setAttribute("aria-invalid", "true");
-}
-
-function setFieldValid(input) {
-  if (!input) {
-    return;
-  }
-
-  const field = input.closest(".form-field");
-  const errorNode = document.getElementById(`${input.id}Error`);
-
-  if (field) {
-    field.classList.remove("has-error");
-    field.classList.add("has-valid");
-  }
-
-  if (errorNode) {
-    errorNode.textContent = "";
-  }
-
-  input.removeAttribute("aria-invalid");
-}
-
-function showFormNotice(noticeElement, message, type = "error") {
-  if (!noticeElement) {
-    return;
-  }
-
-  noticeElement.textContent = message;
-  noticeElement.classList.remove("hidden", "notice-error", "notice-success");
-  if (type === "success") {
-    noticeElement.classList.add("notice-success");
-    return;
-  }
-  noticeElement.classList.add("notice-error");
-}
-
-function clearFormNotice(noticeElement) {
-  if (!noticeElement) {
-    return;
-  }
-
-  noticeElement.textContent = "";
-  noticeElement.classList.add("hidden");
-  noticeElement.classList.remove("notice-error", "notice-success");
-}
-
-function validatePublishYear(rawValue) {
-  if (!rawValue) {
-    return "";
-  }
-
-  const year = Number(rawValue);
-  if (!Number.isInteger(year) || year < 1000 || year > 2100) {
-    return `سال انتشار باید یک عدد صحیح بین ${toPersianDigits(1000)} تا ${toPersianDigits(2100)} باشد.`;
-  }
-
-  return "";
-}
-
-function formatBorrowDate(value) {
-  if (!value) {
-    return "—";
-  }
-
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    const [year, month, day] = value.split("-");
-    return `${toPersianDigits(year)}/${toPersianDigits(month)}/${toPersianDigits(day)}`;
-  }
-
-  return value;
-}
-
-function setDefaultBorrowDate() {
-  const now = new Date();
-  const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
-    .toISOString()
-    .slice(0, 10);
-  dom.borrowDateInput.value = localDate;
-}
-
-function toPersianDigits(value) {
+function toPersianNumber(value) {
   const digits = "۰۱۲۳۴۵۶۷۸۹";
   return String(value).replace(/\d/g, (digit) => digits[digit]);
 }
 
-function getFriendlyError(error) {
-  const text = error?.message || "خطای ناشناخته‌ای رخ داده است.";
-  const match = text.match(/Error invoking remote method '[^']+': (.+)$/);
-  if (match && match[1]) {
-    return match[1];
-  }
-  return text;
+function bindDashboardEvents() {
+  document.querySelectorAll("[data-action]").forEach((element) => {
+    element.addEventListener("click", () => handleMockAction(element.dataset.action, element.dataset.label));
+  });
+
+  const searchInput = document.getElementById("dashboardSearch");
+  searchInput?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && searchInput.value.trim()) {
+      showToast(`جستجو برای «${searchInput.value.trim()}» در نسخه نمایشی فعال شد.`);
+    }
+  });
 }
 
+function handleMockAction(action, label = "") {
+  const messages = {
+    "add-book": "افزودن کتاب در این نسخه نمایشی هنوز به بک‌اند متصل نشده است.",
+    "borrow-book": "ثبت امانت فعلا به صورت نمایشی در داشبورد قرار گرفته است.",
+    "search-book": "از کادر جستجوی بالای صفحه برای جستجوی کتاب استفاده کنید.",
+    borrowers: "نمای امانت‌گیرندگان در مرحله بعد به این داشبورد متصل می‌شود.",
+    filter: "فیلترها فعلا نمایشی هستند.",
+    settings: "تنظیمات فعلا نمایشی است.",
+    "view-due": "نمایش همه کتاب‌های سررسید در نسخه بعدی فعال می‌شود.",
+    "view-books": "نمای کامل جدیدترین کتاب‌ها فعلا نمایشی است.",
+    "view-activities": "فهرست کامل فعالیت‌ها هنوز به داده واقعی متصل نشده است.",
+    nav: `${label || "این بخش"} فعلا در همین داشبورد نمایش داده می‌شود.`
+  };
+
+  showToast(messages[action] || "این کنترل فعلا نمایشی است.");
+}
+
+function showToast(message) {
+  const host = document.getElementById("toastHost");
+  if (!host) {
+    return;
+  }
+
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = message;
+  host.appendChild(toast);
+
+  window.setTimeout(() => {
+    toast.classList.add("is-leaving");
+    window.setTimeout(() => toast.remove(), 220);
+  }, 2800);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const appRoot = document.getElementById("app");
+  appRoot.innerHTML = DashboardPage();
+  bindDashboardEvents();
+});
