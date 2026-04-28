@@ -19,7 +19,7 @@ import type { LucideIcon } from "lucide-react";
 
 export type SidebarItem = {
   icon: LucideIcon;
-  isActive: boolean;
+  key: "dashboard" | "books" | "loans" | "borrowers" | "settings";
   label: string;
 };
 
@@ -76,11 +76,11 @@ export type GuideStep = {
 };
 
 export const sidebarItems: SidebarItem[] = [
-  { label: "داشبورد", icon: Grid2X2, isActive: true },
-  { label: "کتاب‌ها", icon: BookOpen, isActive: false },
-  { label: "امانت‌ها", icon: Repeat2, isActive: false },
-  { label: "امانت‌گیرندگان", icon: UsersRound, isActive: false },
-  { label: "تنظیمات", icon: Settings, isActive: false }
+  { key: "dashboard", label: "داشبورد", icon: Grid2X2 },
+  { key: "books", label: "کتاب‌ها", icon: BookOpen },
+  { key: "loans", label: "امانت‌ها", icon: Repeat2 },
+  { key: "borrowers", label: "امانت‌گیرندگان", icon: UsersRound },
+  { key: "settings", label: "تنظیمات", icon: Settings }
 ];
 
 export const populatedBooks = [

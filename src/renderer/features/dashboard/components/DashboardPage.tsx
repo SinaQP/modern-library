@@ -21,7 +21,7 @@ export function DashboardPage(): ReactElement {
 
   return (
     <div className={isEmpty ? "dashboard-shell is-empty-dashboard" : "dashboard-shell"} dir="rtl">
-      <Sidebar isEmpty={isEmpty} />
+      <Sidebar activeItem="dashboard" isEmpty={isEmpty} />
       <main className="dashboard-main">
         <DashboardHeader isEmpty={isEmpty} />
 
