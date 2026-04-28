@@ -4,11 +4,12 @@
   "description": "سامانه مدیریت کتابخانه شخصی و ثبت امانت کتاب با Electron و SQLite",
   "main": "main.js",
   "scripts": {
-    "start": "npm run build:renderer && electron .",
+    "start": "npm run build:renderer && node scripts/start-electron.js",
     "build": "npm run typecheck && npm run build:renderer",
     "build:renderer": "vite build",
-    "check": "node --check main.js && node --check preload.js && node --check ipc/book-handlers.js && node --check database/db.js && node --check renderer/library-service.js && node --check renderer/app.js && node --check shared/errors.js && node --check shared/ipc/channels.js && npm run typecheck",
+    "check": "node --check main.js && node --check preload.js && node --check ipc/book-handlers.js && node --check database/db.js && node --check renderer/library-service.js && node --check renderer/app.js && node --check shared/errors.js && node --check shared/ipc/channels.js && node --check scripts/start-electron.js && npm run typecheck",
     "dev:renderer": "vite --host 127.0.0.1",
+    "postinstall": "electron-rebuild -w better-sqlite3",
     "rebuild": "electron-rebuild -f -w better-sqlite3",
     "typecheck": "tsc --noEmit",
     "dist": "npm run build && electron-builder --win"
@@ -44,6 +45,7 @@
     "files": [
       "main.js",
       "preload.js",
+      "scripts/**/*",
       "renderer/**/*",
       "renderer-dist/**/*",
       "ipc/**/*",
