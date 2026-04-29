@@ -1,6 +1,16 @@
 import { useMemo, useState } from "react";
-import { initialSelectedBookIds, mockBooks, noResultsFilters } from "../booksData";
-import type { BookFilter, BookModalType, BookRecord, ToastMessage, ToastVariant } from "../types";
+import { mockBooks, noResultsFilters } from "../booksData";
+import type {
+  BookFilter,
+  BookModalType,
+  BookRecord,
+  BookSortOption,
+  ToastMessage,
+  ToastVariant
+} from "../types";
+
+const pageSize = 8;
+const persianCollator = new Intl.Collator("fa", { sensitivity: "base", numeric: true });
 
 function parseBooksRouteState(routeState: string): {
   filter: BookFilter | null;
@@ -44,6 +54,45 @@ function matchesSearch(book: BookRecord, search: string): boolean {
   return [book.title, book.author, book.category, book.isbn].some((value) => value.includes(query));
 }
 
+function compareCreatedAt(a: BookRecord, b: BookRecord): number {
+  return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+}
+
+function compareStatus(a: BookRecord, b: BookRecord, firstStatus: BookRecord["status"]): number {
+  if (a.status === b.status) {
+    return 0;
+  }
+  return a.status === firstStatus ? -1 : 1;
+}
+
+function sortBooks(books: BookRecord[], sortOption: BookSortOption): BookRecord[] {
+  return [...books].sort((a, b) => {
+    switch (sortOption) {
+      case "oldest":
+        return compareCreatedAt(a, b);
+      case "title-asc":
+        return persianCollator.compare(a.title, b.title);
+      case "title-desc":
+        return persianCollator.compare(b.title, a.title);
+      case "author-asc":
+        return persianCollator.compare(a.author, b.author);
+      case "author-desc":
+        return persianCollator.compare(b.author, a.author);
+      case "publish-year-desc":
+        return b.publishYear - a.publishYear;
+      case "publish-year-asc":
+        return a.publishYear - b.publishYear;
+      case "status-available-first":
+        return compareStatus(a, b, "available");
+      case "status-loaned-first":
+        return compareStatus(a, b, "loaned");
+      case "newest":
+      default:
+        return compareCreatedAt(b, a);
+    }
+  });
+}
+
 const messageByVariant = {
   success: {
     title: "عملیات با موفقیت انجام شد",
@@ -72,21 +121,22 @@ export function useBooksPageState(routeState: string) {
         : new Set()
   );
   const [search, setSearch] = useState(routeConfig.search || (isNoResultsRoute ? "دیوان حافظ" : ""));
-  const [selectedBookIds, setSelectedBookIds] = useState<Set<string>>(
-    isEmptyRoute || isNoResultsRoute ? new Set() : new Set(initialSelectedBookIds)
-  );
+  const [sortOption, setSortOption] = useState<BookSortOption>("newest");
   const [activeModal, setActiveModal] = useState<BookModalType | null>(routeConfig.initialModal);
+  const [activeBookId, setActiveBookId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const filteredBooks = useMemo(
     () => books.filter((book) => matchesSearch(book, search) && matchesFilter(book, activeFilters)),
     [activeFilters, books, search]
   );
+  const sortedBooks = useMemo(
+    () => sortBooks(filteredBooks, sortOption),
+    [filteredBooks, sortOption]
+  );
+  const paginatedBooks = useMemo(() => sortedBooks.slice(0, pageSize), [sortedBooks]);
 
-  const selectedBook =
-    books.find((book) => selectedBookIds.has(book.id)) ??
-    books.find((book) => book.status === "loaned") ??
-    books[0];
+  const activeBook = books.find((book) => book.id === activeBookId);
   const hasActiveSearchOrFilter = Boolean(search.trim()) || activeFilters.size > 0;
 
   function toggleFilter(filter: BookFilter) {
@@ -101,18 +151,6 @@ export function useBooksPageState(routeState: string) {
     });
   }
 
-  function toggleSelection(bookId: string) {
-    setSelectedBookIds((currentSelection) => {
-      const nextSelection = new Set(currentSelection);
-      if (nextSelection.has(bookId)) {
-        nextSelection.delete(bookId);
-      } else {
-        nextSelection.add(bookId);
-      }
-      return nextSelection;
-    });
-  }
-
   function showToast(variant: ToastVariant) {
     setToasts((currentToasts) => [
       ...currentToasts,
@@ -122,29 +160,47 @@ export function useBooksPageState(routeState: string) {
 
   function submitModal(variant: ToastVariant = "success") {
     setActiveModal(null);
+    setActiveBookId(null);
     showToast(variant);
+  }
+
+  function closeModal() {
+    setActiveModal(null);
+    setActiveBookId(null);
+  }
+
+  function openAddModal() {
+    setActiveBookId(null);
+    setActiveModal("add");
+  }
+
+  function openBookModal(modal: Exclude<BookModalType, "add">, bookId: string) {
+    setActiveBookId(bookId);
+    setActiveModal(modal);
   }
 
   return {
     activeFilters,
     activeModal,
+    activeBook,
     clearFilters: () => setActiveFilters(new Set()),
     clearSearch: () => setSearch(""),
-    clearSelection: () => setSelectedBookIds(new Set()),
-    closeModal: () => setActiveModal(null),
+    closeModal,
     closeToast: (toastId: number) =>
       setToasts((currentToasts) => currentToasts.filter((toast) => toast.id !== toastId)),
     filteredBooks,
-    openModal: setActiveModal,
+    openAddModal,
+    openBookModal,
+    paginatedBooks,
     search,
-    selectedBook,
-    selectedBookIds,
     setSearch,
+    setSortOption,
     showEmptyState: books.length === 0 && !hasActiveSearchOrFilter,
     showNoResultsState: filteredBooks.length === 0 && hasActiveSearchOrFilter,
+    sortOption,
+    sortedBooks,
     submitModal,
     toasts,
-    toggleFilter,
-    toggleSelection
+    toggleFilter
   };
 }

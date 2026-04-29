@@ -7,6 +7,8 @@ export const mockBooks: BookRecord[] = [
     author: "ویکتور فرانکل",
     category: "روانشناسی",
     isbn: "978-622-7369-12-6",
+    publishYear: 1946,
+    createdAt: "2026-04-24T10:00:00.000Z",
     status: "available",
     coverClass: "cover-meaning"
   },
@@ -16,6 +18,8 @@ export const mockBooks: BookRecord[] = [
     author: "فاطمه معتمدآریا",
     category: "داستان فارسی",
     isbn: "978-622-01-1234-7",
+    publishYear: 2019,
+    createdAt: "2026-04-22T09:30:00.000Z",
     status: "loaned",
     borrower: "سارا مجیدی",
     dueDate: "۱۴۰۴/۰۳/۱۷",
@@ -27,6 +31,8 @@ export const mockBooks: BookRecord[] = [
     author: "پائولو کوئیلو",
     category: "داستان خارجی",
     isbn: "978-964-369-422-6",
+    publishYear: 1988,
+    createdAt: "2026-04-20T14:20:00.000Z",
     status: "available",
     coverClass: "cover-alchemist"
   },
@@ -36,6 +42,8 @@ export const mockBooks: BookRecord[] = [
     author: "هاروکی موراکامی",
     category: "داستان خارجی",
     isbn: "978-600-353-260-1",
+    publishYear: 2021,
+    createdAt: "2026-04-18T08:45:00.000Z",
     status: "loaned",
     borrower: "امانت‌گیرنده",
     dueDate: "۱۴۰۴/۰۳/۰۵",
@@ -47,6 +55,8 @@ export const mockBooks: BookRecord[] = [
     author: "جین آستین",
     category: "رمان کلاسیک",
     isbn: "978-600-8671-90-3",
+    publishYear: 1813,
+    createdAt: "2026-04-16T12:10:00.000Z",
     status: "available",
     coverClass: "cover-pride"
   },
@@ -56,6 +66,8 @@ export const mockBooks: BookRecord[] = [
     author: "آلن دوباتن",
     category: "فلسفه",
     isbn: "978-622-06-1256-2",
+    publishYear: 2006,
+    createdAt: "2026-04-14T16:00:00.000Z",
     status: "available",
     coverClass: "cover-art"
   },
@@ -65,6 +77,8 @@ export const mockBooks: BookRecord[] = [
     author: "جورج اورول",
     category: "ادبیات کلاسیک",
     isbn: "978-964-311-678-2",
+    publishYear: 1949,
+    createdAt: "2026-04-12T11:15:00.000Z",
     status: "loaned",
     borrower: "نیما قاسمی",
     dueDate: "۱۴۰۴/۰۳/۲۰",
@@ -76,11 +90,11 @@ export const mockBooks: BookRecord[] = [
     author: "چارلز دوهیگ",
     category: "روانشناسی",
     isbn: "978-600-118-987-0",
+    publishYear: 2012,
+    createdAt: "2026-04-10T13:40:00.000Z",
     status: "available",
     coverClass: "cover-atomic"
   }
 ];
-
-export const initialSelectedBookIds = new Set(["book-2", "book-4", "book-6"]);
 
 export const noResultsFilters = new Set<BookFilter>(["available", "loaned"]);

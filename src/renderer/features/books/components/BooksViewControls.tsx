@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { ChevronDown, Grid2X2, List } from "lucide-react";
+import { Grid2X2, List } from "lucide-react";
 
 export function BooksViewControls(): ReactElement {
   return (
@@ -12,10 +12,6 @@ export function BooksViewControls(): ReactElement {
           <Grid2X2 size={22} aria-hidden="true" />
         </button>
       </div>
-      <button className="books-sort-select" type="button">
-        <ChevronDown size={18} aria-hidden="true" />
-        <span>مرتب‌سازی: جدیدترین</span>
-      </button>
     </section>
   );
 }

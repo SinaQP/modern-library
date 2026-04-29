@@ -1,29 +1,23 @@
 import type { ReactElement } from "react";
-import { BookPlus, RotateCcw, Search, SlidersHorizontal, Trash2, UserPlus, X, Pencil } from "lucide-react";
+import { BookPlus, Search, X } from "lucide-react";
+import { BooksSortDropdown } from "./BooksSortDropdown";
+import type { BookSortOption } from "../types";
 
 type BooksToolbarProps = {
   onAdd: () => void;
-  onDelete: () => void;
-  onEdit: () => void;
-  onLoan: () => void;
-  onReturn: () => void;
   onSearchChange: (value: string) => void;
+  onSortChange: (value: BookSortOption) => void;
   search: string;
-  selectedCount: number;
+  sortOption: BookSortOption;
 };
 
 export function BooksToolbar({
   onAdd,
-  onDelete,
-  onEdit,
-  onLoan,
-  onReturn,
   onSearchChange,
+  onSortChange,
   search,
-  selectedCount
+  sortOption
 }: BooksToolbarProps): ReactElement {
-  const hasSelection = selectedCount > 0;
-
   return (
     <header className="books-header">
       <div className="books-title">
@@ -49,26 +43,7 @@ export function BooksToolbar({
           ) : null}
         </label>
 
-        <button className="books-tool-button" type="button">
-          <SlidersHorizontal size={20} aria-hidden="true" />
-          <span>مرتب‌سازی</span>
-        </button>
-        <button className="books-tool-button" disabled={!hasSelection} onClick={onReturn} type="button">
-          <RotateCcw size={20} aria-hidden="true" />
-          <span>بازگردانی</span>
-        </button>
-        <button className="books-tool-button" disabled={!hasSelection} onClick={onLoan} type="button">
-          <UserPlus size={20} aria-hidden="true" />
-          <span>امانت دادن</span>
-        </button>
-        <button className="books-tool-button" disabled={!hasSelection} onClick={onDelete} type="button">
-          <Trash2 size={20} aria-hidden="true" />
-          <span>حذف</span>
-        </button>
-        <button className="books-tool-button" disabled={!hasSelection} onClick={onEdit} type="button">
-          <Pencil size={20} aria-hidden="true" />
-          <span>ویرایش</span>
-        </button>
+        <BooksSortDropdown onChange={onSortChange} value={sortOption} />
         <button className="books-primary-action" onClick={onAdd} type="button">
           <BookPlus size={20} aria-hidden="true" />
           <span>افزودن کتاب</span>

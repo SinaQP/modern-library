@@ -4,19 +4,23 @@ import type { BookRecord } from "../types";
 
 type BookGridProps = {
   books: BookRecord[];
-  onToggleSelection: (bookId: string) => void;
-  selectedBookIds: Set<string>;
+  onDelete: (bookId: string) => void;
+  onEdit: (bookId: string) => void;
+  onLoan: (bookId: string) => void;
+  onReturn: (bookId: string) => void;
 };
 
-export function BookGrid({ books, onToggleSelection, selectedBookIds }: BookGridProps): ReactElement {
+export function BookGrid({ books, onDelete, onEdit, onLoan, onReturn }: BookGridProps): ReactElement {
   return (
     <section className="book-grid" aria-label="فهرست کتاب‌ها">
       {books.map((book) => (
         <BookCard
           book={book}
-          isSelected={selectedBookIds.has(book.id)}
           key={book.id}
-          onToggleSelection={onToggleSelection}
+          onDelete={onDelete}
+          onEdit={onEdit}
+          onLoan={onLoan}
+          onReturn={onReturn}
         />
       ))}
     </section>

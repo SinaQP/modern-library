@@ -6,7 +6,11 @@ type BooksPaginationProps = {
 };
 
 export function BooksPagination({ total }: BooksPaginationProps): ReactElement {
-  const rangeText = total === 0 ? "نمایش ۰ تا ۰ از ۰ کتاب" : "نمایش ۱ تا ۸ از ۴۷ کتاب";
+  const visibleCount = Math.min(total, 8);
+  const rangeText =
+    total === 0
+      ? "نمایش ۰ تا ۰ از ۰ کتاب"
+      : `نمایش ۱ تا ${visibleCount.toLocaleString("fa-IR")} از ${total.toLocaleString("fa-IR")} کتاب`;
 
   return (
     <footer className="books-pagination">

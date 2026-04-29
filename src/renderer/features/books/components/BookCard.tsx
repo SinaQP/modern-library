@@ -1,27 +1,20 @@
 import type { ReactElement } from "react";
-import { Bookmark, Info, MoreHorizontal, Pencil, RotateCcw, UserRound } from "lucide-react";
+import { Bookmark, Info, MoreHorizontal, Pencil, RotateCcw, Trash2, UserPlus, UserRound } from "lucide-react";
 import type { BookRecord } from "../types";
 
 type BookCardProps = {
   book: BookRecord;
-  isSelected: boolean;
-  onToggleSelection: (bookId: string) => void;
+  onDelete: (bookId: string) => void;
+  onEdit: (bookId: string) => void;
+  onLoan: (bookId: string) => void;
+  onReturn: (bookId: string) => void;
 };
 
-export function BookCard({ book, isSelected, onToggleSelection }: BookCardProps): ReactElement {
+export function BookCard({ book, onDelete, onEdit, onLoan, onReturn }: BookCardProps): ReactElement {
   const isLoaned = book.status === "loaned";
 
   return (
-    <article className={isSelected ? "book-card is-selected" : "book-card"}>
-      <label className="book-card__checkbox">
-        <input
-          checked={isSelected}
-          onChange={() => onToggleSelection(book.id)}
-          type="checkbox"
-        />
-        <span aria-hidden="true" />
-      </label>
-
+    <article className="book-card">
       <div className={`book-cover book-card__cover ${book.coverClass}`}>
         <span>{book.title}</span>
         <small>{book.author}</small>
@@ -47,9 +40,24 @@ export function BookCard({ book, isSelected, onToggleSelection }: BookCardProps)
       <footer className="book-card__footer">
         <button aria-label="گزینه‌های بیشتر" type="button"><MoreHorizontal size={22} /></button>
         <button aria-label="اطلاعات کتاب" type="button"><Info size={22} /></button>
-        <button aria-label="ویرایش کتاب" type="button"><Pencil size={22} /></button>
-        <button aria-label={isLoaned ? "بازگردانی کتاب" : "نشان کردن کتاب"} type="button">
-          {isLoaned ? <RotateCcw size={22} /> : <Bookmark size={22} />}
+        <button aria-label="ویرایش کتاب" onClick={() => onEdit(book.id)} type="button"><Pencil size={22} /></button>
+        <button
+          aria-label="حذف کتاب"
+          className="book-card__action--danger"
+          onClick={() => onDelete(book.id)}
+          type="button"
+        >
+          <Trash2 size={22} />
+        </button>
+        {!isLoaned ? (
+          <button aria-label="نشان کردن کتاب" type="button"><Bookmark size={22} /></button>
+        ) : null}
+        <button
+          aria-label={isLoaned ? "بازگردانی کتاب" : "ثبت امانت کتاب"}
+          onClick={() => (isLoaned ? onReturn(book.id) : onLoan(book.id))}
+          type="button"
+        >
+          {isLoaned ? <RotateCcw size={22} /> : <UserPlus size={22} />}
         </button>
       </footer>
     </article>
