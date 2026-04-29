@@ -1,4 +1,5 @@
 import type { ReactElement, ReactNode } from "react";
+import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -20,10 +21,41 @@ export function BookModalFrame({
   width = "lg"
 }: BookModalFrameProps): ReactElement {
   const Icon = icon;
+  const dialogRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const previouslyFocusedElement = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+
+    window.setTimeout(() => {
+      const closeButton = dialogRef.current?.querySelector<HTMLButtonElement>("button");
+      closeButton?.focus();
+    }, 0);
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      previouslyFocusedElement?.focus();
+    };
+  }, [onClose]);
 
   return (
-    <div className="book-modal-backdrop">
-      <section className={`book-modal book-modal--${width}`} aria-modal="true" role="dialog">
+    <div className="book-modal-backdrop" onMouseDown={onClose}>
+      <section
+        className={`book-modal book-modal--${width}`}
+        aria-modal="true"
+        onMouseDown={(event) => event.stopPropagation()}
+        ref={dialogRef}
+        role="dialog"
+      >
         <header className="book-modal__header">
           <button aria-label="بستن" onClick={onClose} type="button">
             <X size={22} aria-hidden="true" />

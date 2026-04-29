@@ -27,7 +27,7 @@ export function Sidebar({ activeItem = "dashboard", isEmpty }: SidebarProps): Re
           <span className="sidebar-brand__mark" aria-hidden="true">
             <BookOpen size={32} />
           </span>
-          <div>
+          <div className="sidebar-brand__text">
             <p>سامانه مدیریت</p>
             <strong>کتابخانه شخصی</strong>
           </div>

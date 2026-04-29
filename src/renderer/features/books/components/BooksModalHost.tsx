@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { AddBookModal } from "./AddBookModal";
 import { DeleteBookDialog } from "./DeleteBookDialog";
+import { BookDetailsModal } from "./BookDetailsModal";
 import { EditBookModal } from "./EditBookModal";
 import { LoanBookModal } from "./LoanBookModal";
 import { ReturnBookModal } from "./ReturnBookModal";
@@ -10,6 +11,7 @@ type BooksModalHostProps = {
   activeModal: BookModalType | null;
   book?: BookRecord;
   onClose: () => void;
+  onOpenBookModal: (modal: Exclude<BookModalType, "add">, bookId: string) => void;
   onSubmit: (variant?: ToastVariant) => void;
 };
 
@@ -17,6 +19,7 @@ export function BooksModalHost({
   activeModal,
   book,
   onClose,
+  onOpenBookModal,
   onSubmit
 }: BooksModalHostProps): ReactElement | null {
   if (!activeModal) {
@@ -29,6 +32,19 @@ export function BooksModalHost({
 
   if (!book) {
     return null;
+  }
+
+  if (activeModal === "details") {
+    return (
+      <BookDetailsModal
+        book={book}
+        onClose={onClose}
+        onDelete={(selectedBook) => onOpenBookModal("delete", selectedBook.id)}
+        onEdit={(selectedBook) => onOpenBookModal("edit", selectedBook.id)}
+        onLoan={(selectedBook) => onOpenBookModal("loan", selectedBook.id)}
+        onReturn={(selectedBook) => onOpenBookModal("return", selectedBook.id)}
+      />
+    );
   }
 
   if (activeModal === "edit") {

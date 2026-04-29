@@ -4,14 +4,19 @@ export type BookRecord = {
   author: string;
   borrower?: string;
   category: string;
+  copyCount?: number;
   coverClass: string;
   createdAt: string;
+  description?: string;
   dueDate?: string;
   id: string;
   isbn: string;
+  loanDate?: string;
   publishYear: number;
+  publisher?: string;
   status: BookStatus;
   title: string;
+  translator?: string;
 };
 
 export type BookFilter = "available" | "loaned" | "overdue";
@@ -37,4 +42,6 @@ export type ToastMessage = {
   variant: ToastVariant;
 };
 
-export type BookModalType = "add" | "edit" | "loan" | "return" | "delete";
+export type BookModalType = "add" | "details" | "edit" | "loan" | "return" | "delete";
+
+export type BookViewMode = "grid" | "list";

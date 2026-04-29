@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import type { BookRecord } from "../types";
 
-type BookCardProps = {
+type BookListRowProps = {
   book: BookRecord;
   isSaved: boolean;
   onDelete: (book: BookRecord) => void;
@@ -33,6 +33,11 @@ type MenuPosition = {
 const moreMenuWidth = 194;
 const moreMenuGap = 8;
 const viewportPadding = 12;
+const persianDigits = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
+
+function toPersianDigits(value: string): string {
+  return value.replace(/\d/g, (digit) => persianDigits[Number(digit)]);
+}
 
 function getMenuPosition(trigger: HTMLButtonElement): MenuPosition {
   const triggerRect = trigger.getBoundingClientRect();
@@ -49,7 +54,7 @@ function getMenuPosition(trigger: HTMLButtonElement): MenuPosition {
   return { left, top };
 }
 
-export function BookCard({
+export function BookListRow({
   book,
   isSaved,
   onDelete,
@@ -58,11 +63,13 @@ export function BookCard({
   onOpenDetails,
   onReturn,
   onToggleSaved
-}: BookCardProps): ReactElement {
+}: BookListRowProps): ReactElement {
   const isLoaned = book.status === "loaned";
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const moreButtonRef = useRef<HTMLButtonElement>(null);
+  const statusText = isLoaned ? "امانت داده شده" : "در دسترس";
+  const loanText = isLoaned ? (book.borrower ?? "امانت‌گیرنده") : "آماده امانت";
 
   useEffect(() => {
     if (!menuPosition) {
@@ -120,30 +127,40 @@ export function BookCard({
     : undefined;
 
   return (
-    <article className="book-card">
-      <div className={`book-cover book-card__cover ${book.coverClass}`}>
-        <span>{book.title}</span>
-        <small>{book.author}</small>
+    <article className="book-list-row">
+      <div className="book-list-row__book" data-label="کتاب">
+        <div className={`book-cover book-list-row__cover ${book.coverClass}`}>
+          <span>{book.title}</span>
+        </div>
+        <div className="book-list-row__title">
+          <h2>{book.title}</h2>
+          <p>{book.author}</p>
+        </div>
       </div>
 
-      <div className="book-card__body">
-        <h2>{book.title}</h2>
-        <p>{book.author}</p>
+      <div className="book-list-row__cell" data-label="دسته‌بندی">
         <span>{book.category}</span>
-        <small>ISBN: {book.isbn}</small>
-        <strong className={isLoaned ? "book-status book-status--loaned" : "book-status"}>
-          {isLoaned ? "امانت داده شده" : "در دسترس"}
-        </strong>
-
-        {isLoaned ? (
-          <div className="book-loan-info">
-            <span><UserRound size={16} aria-hidden="true" />{book.borrower ?? "امانت‌گیرنده"}</span>
-            <p>موعد بازگشت: <b>{book.dueDate}</b></p>
-          </div>
-        ) : null}
       </div>
 
-      <footer className="book-card__footer">
+      <div className="book-list-row__cell book-list-row__isbn" data-label="شابک">
+        <span>{toPersianDigits(book.isbn)}</span>
+      </div>
+
+      <div className="book-list-row__cell" data-label="وضعیت">
+        <strong className={isLoaned ? "book-status book-status--loaned" : "book-status"}>
+          {statusText}
+        </strong>
+      </div>
+
+      <div className="book-list-row__loan" data-label="امانت">
+        <span>
+          {isLoaned ? <UserRound size={16} aria-hidden="true" /> : null}
+          {loanText}
+        </span>
+        {isLoaned && book.dueDate ? <small>موعد بازگشت: {toPersianDigits(book.dueDate)}</small> : null}
+      </div>
+
+      <div className="book-list-actions" data-label="اقدام‌ها">
         <button
           aria-expanded={Boolean(menuPosition)}
           aria-label="گزینه‌های بیشتر"
@@ -167,7 +184,7 @@ export function BookCard({
         </button>
         <button
           aria-label="حذف کتاب"
-          className="book-card__action--danger"
+          className="book-list-action--danger"
           onClick={() => onDelete(book)}
           title="حذف کتاب"
           type="button"
@@ -176,7 +193,7 @@ export function BookCard({
         </button>
         <button
           aria-label="ذخیره کتاب"
-          className={isSaved ? "book-card__action--saved is-active" : "book-card__action--saved"}
+          className={isSaved ? "book-list-action--saved is-active" : "book-list-action--saved"}
           onClick={() => onToggleSaved(book)}
           title="ذخیره کتاب"
           type="button"
@@ -185,13 +202,14 @@ export function BookCard({
         </button>
         <button
           aria-label={isLoaned ? "بازگردانی کتاب" : "ثبت امانت"}
+          className="book-list-action--loan"
           onClick={() => (isLoaned ? onReturn(book) : onLoan(book))}
           title={isLoaned ? "بازگردانی کتاب" : "ثبت امانت"}
           type="button"
         >
           {isLoaned ? <RotateCcw size={22} aria-hidden="true" /> : <UserPlus size={22} aria-hidden="true" />}
         </button>
-      </footer>
+      </div>
 
       {menuPosition
         ? createPortal(

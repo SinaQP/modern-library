@@ -124,6 +124,7 @@ export function useBooksPageState(routeState: string) {
   const [sortOption, setSortOption] = useState<BookSortOption>("newest");
   const [activeModal, setActiveModal] = useState<BookModalType | null>(routeConfig.initialModal);
   const [activeBookId, setActiveBookId] = useState<string | null>(null);
+  const [savedBookIds, setSavedBookIds] = useState<Set<string>>(new Set());
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const filteredBooks = useMemo(
@@ -151,11 +152,15 @@ export function useBooksPageState(routeState: string) {
     });
   }
 
-  function showToast(variant: ToastVariant) {
+  function showToastMessage(variant: ToastVariant, title: string, text: string) {
     setToasts((currentToasts) => [
       ...currentToasts,
-      { id: Date.now(), variant, ...messageByVariant[variant] }
+      { id: Date.now() + Math.random(), text, title, variant }
     ]);
+  }
+
+  function showToast(variant: ToastVariant) {
+    showToastMessage(variant, messageByVariant[variant].title, messageByVariant[variant].text);
   }
 
   function submitModal(variant: ToastVariant = "success") {
@@ -179,6 +184,21 @@ export function useBooksPageState(routeState: string) {
     setActiveModal(modal);
   }
 
+  function toggleSavedBook(bookId: string) {
+    const nextSavedBookIds = new Set(savedBookIds);
+    const isSaved = nextSavedBookIds.has(bookId);
+
+    if (isSaved) {
+      nextSavedBookIds.delete(bookId);
+      showToastMessage("info", "ذخیره‌ها", "کتاب از ذخیره‌ها حذف شد");
+    } else {
+      nextSavedBookIds.add(bookId);
+      showToastMessage("success", "ذخیره‌ها", "کتاب ذخیره شد");
+    }
+
+    setSavedBookIds(nextSavedBookIds);
+  }
+
   return {
     activeFilters,
     activeModal,
@@ -193,6 +213,7 @@ export function useBooksPageState(routeState: string) {
     openBookModal,
     paginatedBooks,
     search,
+    savedBookIds,
     setSearch,
     setSortOption,
     showEmptyState: books.length === 0 && !hasActiveSearchOrFilter,
@@ -201,6 +222,7 @@ export function useBooksPageState(routeState: string) {
     sortedBooks,
     submitModal,
     toasts,
+    toggleSavedBook,
     toggleFilter
   };
 }
