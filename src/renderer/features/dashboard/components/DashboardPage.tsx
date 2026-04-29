@@ -1,4 +1,5 @@
 import type { ReactElement } from "react";
+import { AppLayout } from "../../../app/layout/AppLayout";
 import { DashboardHeader } from "./DashboardHeader";
 import { DueBooks } from "./DueBooks";
 import { EmptyDashboardHero } from "./EmptyDashboardHero";
@@ -7,7 +8,6 @@ import { GettingStartedGuide } from "./GettingStartedGuide";
 import { NewBooks } from "./NewBooks";
 import { QuickActions } from "./QuickActions";
 import { RecentActivities } from "./RecentActivities";
-import { Sidebar } from "./Sidebar";
 import { StatsCard } from "./StatsCard";
 import { emptyStateCards, emptyStats, populatedBooks, populatedStats } from "../dashboardData";
 
@@ -25,9 +25,12 @@ export function DashboardPage(): ReactElement {
   }
 
   return (
-    <div className={isEmpty ? "dashboard-shell is-empty-dashboard" : "dashboard-shell"} dir="rtl">
-      <Sidebar activeItem="dashboard" isEmpty={isEmpty} />
-      <main className="dashboard-main">
+    <AppLayout
+      activeItem="dashboard"
+      isEmpty={isEmpty}
+      mainClassName="dashboard-main"
+      shellClassName={isEmpty ? "is-empty-dashboard" : undefined}
+    >
         <DashboardHeader
           isEmpty={isEmpty}
           onAddBook={() => navigateToBooks({ action: "add" })}
@@ -64,7 +67,6 @@ export function DashboardPage(): ReactElement {
             </section>
           </>
         )}
-      </main>
-    </div>
+    </AppLayout>
   );
 }

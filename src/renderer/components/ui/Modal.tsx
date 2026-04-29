@@ -93,7 +93,9 @@ export function Modal({ children, isOpen, onClose, title }: ModalProps): ReactEl
             <X size={18} aria-hidden="true" />
           </Button>
         </header>
-        {children}
+        <div className="modal__body">
+          {children}
+        </div>
       </section>
     </div>
   );

@@ -8,23 +8,35 @@ type AddBookModalProps = {
 };
 
 export function AddBookModal({ onClose, onSubmit }: AddBookModalProps): ReactElement {
+  const formId = "add-book-form";
+
   return (
-    <BookModalFrame icon={BookPlus} onClose={onClose} title="افزودن کتاب">
-      <div className="book-form-layout">
+    <BookModalFrame
+      footer={(
+        <>
+          <button className="books-secondary-button" onClick={onClose} type="button">انصراف</button>
+          <button className="books-primary-action" form={formId} type="submit"><Plus size={20} />افزودن کتاب</button>
+        </>
+      )}
+      icon={BookPlus}
+      onClose={onClose}
+      title="افزودن کتاب"
+    >
+      <form
+        className="book-form-layout"
+        id={formId}
+        onSubmit={(event) => { event.preventDefault(); onSubmit(); }}
+      >
         <aside className="cover-upload-box">
           <Image size={42} aria-hidden="true" />
           <strong>تصویر جلد کتاب</strong>
           <span>حداکثر 2MB، PNG, JPG</span>
           <button type="button">انتخاب تصویر</button>
         </aside>
-        <form className="book-modal-form" onSubmit={(event) => { event.preventDefault(); onSubmit(); }}>
+        <div className="book-modal-form">
           <FormGrid />
-          <footer className="book-modal__footer">
-            <button className="books-secondary-button" onClick={onClose} type="button">انصراف</button>
-            <button className="books-primary-action" type="submit"><Plus size={20} />افزودن کتاب</button>
-          </footer>
-        </form>
-      </div>
+        </div>
+      </form>
     </BookModalFrame>
   );
 }

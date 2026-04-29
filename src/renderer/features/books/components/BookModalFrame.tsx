@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 
 type BookModalFrameProps = {
   children: ReactNode;
+  footer?: ReactNode;
   icon: LucideIcon;
   onClose: () => void;
   title: string;
@@ -12,6 +13,7 @@ type BookModalFrameProps = {
 
 export function BookModalFrame({
   children,
+  footer,
   icon,
   onClose,
   title,
@@ -29,7 +31,10 @@ export function BookModalFrame({
           <h2>{title}</h2>
           <Icon size={28} aria-hidden="true" />
         </header>
-        {children}
+        <div className="book-modal__body">
+          {children}
+        </div>
+        {footer ? <footer className="book-modal__footer">{footer}</footer> : null}
       </section>
     </div>
   );

@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { Sidebar } from "../../dashboard/components/Sidebar";
+import { AppLayout } from "../../../app/layout/AppLayout";
 import { BookGrid } from "./BookGrid";
 import { BooksEmptyState } from "./BooksEmptyState";
 import { BooksFilterTabs } from "./BooksFilterTabs";
@@ -20,56 +20,53 @@ export function BooksPage({ routeState }: BooksPageProps): ReactElement {
   const booksState = useBooksPageState(routeState);
 
   return (
-    <div className="dashboard-shell books-shell" dir="rtl">
-      <Sidebar activeItem="books" isEmpty={false} />
-      <main className="books-main">
-        <BooksToolbar
-          onAdd={() => booksState.openModal("add")}
-          onDelete={() => booksState.openModal("delete")}
-          onEdit={() => booksState.openModal("edit")}
-          onLoan={() => booksState.openModal("loan")}
-          onReturn={() => booksState.openModal("return")}
-          onSearchChange={booksState.setSearch}
-          search={booksState.search}
-          selectedCount={booksState.selectedBookIds.size}
-        />
+    <AppLayout activeItem="books" mainClassName="books-main" shellClassName="books-shell">
+      <BooksToolbar
+        onAdd={() => booksState.openModal("add")}
+        onDelete={() => booksState.openModal("delete")}
+        onEdit={() => booksState.openModal("edit")}
+        onLoan={() => booksState.openModal("loan")}
+        onReturn={() => booksState.openModal("return")}
+        onSearchChange={booksState.setSearch}
+        search={booksState.search}
+        selectedCount={booksState.selectedBookIds.size}
+      />
 
-        <BooksFilterTabs
+      <BooksFilterTabs
+        activeFilters={booksState.activeFilters}
+        onClearFilters={booksState.clearFilters}
+        onToggleFilter={booksState.toggleFilter}
+      />
+      <BooksViewControls />
+
+      <SelectionActionBar
+        count={booksState.selectedBookIds.size}
+        onClearSelection={booksState.clearSelection}
+        onDelete={() => booksState.openModal("delete")}
+        onEdit={() => booksState.openModal("edit")}
+        onLoan={() => booksState.openModal("loan")}
+        onReturn={() => booksState.openModal("return")}
+      />
+
+      {booksState.showEmptyState ? (
+        <BooksEmptyState onAdd={() => booksState.openModal("add")} />
+      ) : booksState.showNoResultsState ? (
+        <BooksNoResultsState
           activeFilters={booksState.activeFilters}
+          onAdd={() => booksState.openModal("add")}
           onClearFilters={booksState.clearFilters}
-          onToggleFilter={booksState.toggleFilter}
+          onClearSearch={booksState.clearSearch}
+          search={booksState.search}
         />
-        <BooksViewControls />
-
-        <SelectionActionBar
-          count={booksState.selectedBookIds.size}
-          onClearSelection={booksState.clearSelection}
-          onDelete={() => booksState.openModal("delete")}
-          onEdit={() => booksState.openModal("edit")}
-          onLoan={() => booksState.openModal("loan")}
-          onReturn={() => booksState.openModal("return")}
+      ) : (
+        <BookGrid
+          books={booksState.filteredBooks}
+          onToggleSelection={booksState.toggleSelection}
+          selectedBookIds={booksState.selectedBookIds}
         />
+      )}
 
-        {booksState.showEmptyState ? (
-          <BooksEmptyState onAdd={() => booksState.openModal("add")} />
-        ) : booksState.showNoResultsState ? (
-          <BooksNoResultsState
-            activeFilters={booksState.activeFilters}
-            onAdd={() => booksState.openModal("add")}
-            onClearFilters={booksState.clearFilters}
-            onClearSearch={booksState.clearSearch}
-            search={booksState.search}
-          />
-        ) : (
-          <BookGrid
-            books={booksState.filteredBooks}
-            onToggleSelection={booksState.toggleSelection}
-            selectedBookIds={booksState.selectedBookIds}
-          />
-        )}
-
-        <BooksPagination total={booksState.filteredBooks.length} />
-      </main>
+      <BooksPagination total={booksState.filteredBooks.length} />
 
       <BooksModalHost
         activeModal={booksState.activeModal}
@@ -81,6 +78,6 @@ export function BooksPage({ routeState }: BooksPageProps): ReactElement {
         onClose={booksState.closeToast}
         toasts={booksState.toasts}
       />
-    </div>
+    </AppLayout>
   );
 }

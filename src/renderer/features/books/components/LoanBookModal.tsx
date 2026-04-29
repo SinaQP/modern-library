@@ -11,18 +11,30 @@ type LoanBookModalProps = {
 };
 
 export function LoanBookModal({ book, onClose, onSubmit }: LoanBookModalProps): ReactElement {
+  const formId = "loan-book-form";
+
   return (
-    <BookModalFrame icon={HandHeart} onClose={onClose} title="ثبت امانت">
-      <form className="book-modal-form book-modal-form--single" onSubmit={(event) => { event.preventDefault(); onSubmit(); }}>
+    <BookModalFrame
+      footer={(
+        <>
+          <button className="books-secondary-button" onClick={onClose} type="button">انصراف</button>
+          <button className="books-primary-action" form={formId} type="submit">ثبت امانت</button>
+        </>
+      )}
+      icon={HandHeart}
+      onClose={onClose}
+      title="ثبت امانت"
+    >
+      <form
+        className="book-modal-form book-modal-form--single"
+        id={formId}
+        onSubmit={(event) => { event.preventDefault(); onSubmit(); }}
+      >
         <BookSummaryCard book={book} />
         <label className="form-wide">امانت‌گیرنده *<input placeholder="جستجو و انتخاب امانت‌گیرنده..." /></label>
         <label>تاریخ امانت *<input defaultValue="۱۴۰۴/۰۳/۱۲" /></label>
         <label>تاریخ بازگشت *<input defaultValue="۱۴۰۴/۰۳/۲۱" /></label>
         <label className="form-wide">یادداشت<textarea placeholder="یادداشتی اختیاری وارد کنید..." /></label>
-        <footer className="book-modal__footer">
-          <button className="books-secondary-button" onClick={onClose} type="button">انصراف</button>
-          <button className="books-primary-action" type="submit">ثبت امانت</button>
-        </footer>
       </form>
     </BookModalFrame>
   );
