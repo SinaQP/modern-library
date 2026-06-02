@@ -12,8 +12,7 @@ type BooksNoResultsStateProps = {
 
 const filterLabels: Record<BookFilter, string> = {
   available: "در دسترس",
-  loaned: "امانت داده شده",
-  overdue: "معوق"
+  loaned: "امانت داده شده"
 };
 
 export function BooksNoResultsState({

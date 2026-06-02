@@ -1,15 +1,25 @@
-import { useMemo, useState } from "react";
-import { mockBooks, noResultsFilters } from "../booksData";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  addBook,
+  deleteBook,
+  fetchBooks,
+  loanBook,
+  returnBook,
+  updateBook
+} from "../services/booksService";
 import type {
   BookFilter,
+  BookFormValues,
   BookModalType,
   BookRecord,
   BookSortOption,
+  LoanFormValues,
   ToastMessage,
   ToastVariant
 } from "../types";
 
 const pageSize = 8;
+const toastDismissDelay = 5000;
 const persianCollator = new Intl.Collator("fa", { sensitivity: "base", numeric: true });
 
 function parseBooksRouteState(routeState: string): {
@@ -25,9 +35,7 @@ function parseBooksRouteState(routeState: string): {
   const actionValue = isBooksRoute ? params.get("action") : null;
 
   const filter: BookFilter | null =
-    filterValue === "available" || filterValue === "loaned" || filterValue === "overdue"
-      ? filterValue
-      : null;
+    filterValue === "available" || filterValue === "loaned" ? filterValue : null;
   const initialModal: BookModalType | null = actionValue === "add" ? "add" : null;
 
   return { filter, initialModal, search };
@@ -40,8 +48,7 @@ function matchesFilter(book: BookRecord, filters: Set<BookFilter>): boolean {
 
   return (
     (filters.has("available") && book.status === "available") ||
-    (filters.has("loaned") && book.status === "loaned") ||
-    (filters.has("overdue") && book.id === "book-4")
+    (filters.has("loaned") && book.status === "loaned")
   );
 }
 
@@ -51,7 +58,9 @@ function matchesSearch(book: BookRecord, search: string): boolean {
     return true;
   }
 
-  return [book.title, book.author, book.category, book.isbn].some((value) => value.includes(query));
+  return [book.title, book.author, book.category, book.publisher, book.isbn].some((value) =>
+    (value ?? "").includes(query)
+  );
 }
 
 function compareCreatedAt(a: BookRecord, b: BookRecord): number {
@@ -96,7 +105,7 @@ function sortBooks(books: BookRecord[], sortOption: BookSortOption): BookRecord[
 const messageByVariant = {
   success: {
     title: "عملیات با موفقیت انجام شد",
-    text: "کتاب با موفقیت به کتابخانه اضافه شد."
+    text: "فهرست کتاب‌ها به‌روز شد."
   },
   error: {
     title: "خطا در انجام عملیات",
@@ -110,22 +119,47 @@ const messageByVariant = {
 
 export function useBooksPageState(routeState: string) {
   const routeConfig = parseBooksRouteState(routeState);
-  const isEmptyRoute = routeState.includes("empty");
-  const isNoResultsRoute = routeState.includes("no-results");
-  const [books] = useState<BookRecord[]>(isEmptyRoute ? [] : mockBooks);
+  const [books, setBooks] = useState<BookRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [isMutating, setIsMutating] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Set<BookFilter>>(
-    isNoResultsRoute
-      ? new Set(noResultsFilters)
-      : routeConfig.filter
-        ? new Set<BookFilter>([routeConfig.filter])
-        : new Set()
+    routeConfig.filter ? new Set<BookFilter>([routeConfig.filter]) : new Set()
   );
-  const [search, setSearch] = useState(routeConfig.search || (isNoResultsRoute ? "دیوان حافظ" : ""));
+  const [search, setSearch] = useState(routeConfig.search);
   const [sortOption, setSortOption] = useState<BookSortOption>("newest");
+  const [currentPage, setCurrentPage] = useState(1);
   const [activeModal, setActiveModal] = useState<BookModalType | null>(routeConfig.initialModal);
-  const [activeBookId, setActiveBookId] = useState<string | null>(null);
-  const [savedBookIds, setSavedBookIds] = useState<Set<string>>(new Set());
+  const [activeBookId, setActiveBookId] = useState<number | null>(null);
+  const [savedBookIds, setSavedBookIds] = useState<Set<number>>(new Set());
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const toastTimers = useRef<Map<number, number>>(new Map());
+
+  const loadBooks = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError("");
+
+    try {
+      setBooks(await fetchBooks());
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "بارگذاری کتاب‌ها ناموفق بود.";
+      setLoadError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadBooks();
+  }, [loadBooks]);
+
+  useEffect(() => {
+    return () => {
+      toastTimers.current.forEach((timerId) => window.clearTimeout(timerId));
+      toastTimers.current.clear();
+    };
+  }, []);
 
   const filteredBooks = useMemo(
     () => books.filter((book) => matchesSearch(book, search) && matchesFilter(book, activeFilters)),
@@ -135,7 +169,21 @@ export function useBooksPageState(routeState: string) {
     () => sortBooks(filteredBooks, sortOption),
     [filteredBooks, sortOption]
   );
-  const paginatedBooks = useMemo(() => sortedBooks.slice(0, pageSize), [sortedBooks]);
+  const pageCount = Math.max(1, Math.ceil(sortedBooks.length / pageSize));
+  const paginatedBooks = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return sortedBooks.slice(startIndex, startIndex + pageSize);
+  }, [currentPage, sortedBooks]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFilters, search, sortOption]);
+
+  useEffect(() => {
+    if (currentPage > pageCount) {
+      setCurrentPage(pageCount);
+    }
+  }, [currentPage, pageCount]);
 
   const activeBook = books.find((book) => book.id === activeBookId);
   const hasActiveSearchOrFilter = Boolean(search.trim()) || activeFilters.size > 0;
@@ -152,21 +200,48 @@ export function useBooksPageState(routeState: string) {
     });
   }
 
+  const closeToast = useCallback((toastId: number) => {
+    const timerId = toastTimers.current.get(toastId);
+    if (timerId) {
+      window.clearTimeout(timerId);
+      toastTimers.current.delete(toastId);
+    }
+
+    setToasts((currentToasts) => currentToasts.filter((toast) => toast.id !== toastId));
+  }, []);
+
   function showToastMessage(variant: ToastVariant, title: string, text: string) {
+    const toastId = Date.now() + Math.random();
     setToasts((currentToasts) => [
       ...currentToasts,
-      { id: Date.now() + Math.random(), text, title, variant }
+      { id: toastId, text, title, variant }
     ]);
+
+    const timerId = window.setTimeout(() => closeToast(toastId), toastDismissDelay);
+    toastTimers.current.set(toastId, timerId);
   }
 
   function showToast(variant: ToastVariant) {
     showToastMessage(variant, messageByVariant[variant].title, messageByVariant[variant].text);
   }
 
-  function submitModal(variant: ToastVariant = "success") {
-    setActiveModal(null);
-    setActiveBookId(null);
-    showToast(variant);
+  async function runMutation(action: () => Promise<void>, variant: ToastVariant = "success") {
+    setActionError("");
+    setIsMutating(true);
+
+    try {
+      await action();
+      await loadBooks();
+      setActiveModal(null);
+      setActiveBookId(null);
+      showToast(variant);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "انجام عملیات ناموفق بود.";
+      setActionError(message);
+      showToastMessage("error", "خطا در انجام عملیات", message);
+    } finally {
+      setIsMutating(false);
+    }
   }
 
   function closeModal() {
@@ -179,12 +254,48 @@ export function useBooksPageState(routeState: string) {
     setActiveModal("add");
   }
 
-  function openBookModal(modal: Exclude<BookModalType, "add">, bookId: string) {
+  function openBookModal(modal: Exclude<BookModalType, "add">, bookId: number) {
     setActiveBookId(bookId);
     setActiveModal(modal);
   }
 
-  function toggleSavedBook(bookId: string) {
+  function submitAddBook(values: BookFormValues) {
+    return runMutation(() => addBook(values), "success");
+  }
+
+  function submitEditBook(values: BookFormValues) {
+    if (activeBookId === null) {
+      return Promise.resolve();
+    }
+
+    return runMutation(() => updateBook(activeBookId, values), "success");
+  }
+
+  function submitLoanBook(values: LoanFormValues) {
+    if (activeBookId === null) {
+      return Promise.resolve();
+    }
+
+    return runMutation(() => loanBook(activeBookId, values), "success");
+  }
+
+  function submitReturnBook() {
+    if (activeBookId === null) {
+      return Promise.resolve();
+    }
+
+    return runMutation(() => returnBook(activeBookId), "info");
+  }
+
+  function submitDeleteBook() {
+    if (activeBookId === null) {
+      return Promise.resolve();
+    }
+
+    return runMutation(() => deleteBook(activeBookId), "success");
+  }
+
+  function toggleSavedBook(bookId: number) {
     const nextSavedBookIds = new Set(savedBookIds);
     const isSaved = nextSavedBookIds.has(bookId);
 
@@ -203,24 +314,36 @@ export function useBooksPageState(routeState: string) {
     activeFilters,
     activeModal,
     activeBook,
+    actionError,
     clearFilters: () => setActiveFilters(new Set()),
     clearSearch: () => setSearch(""),
     closeModal,
-    closeToast: (toastId: number) =>
-      setToasts((currentToasts) => currentToasts.filter((toast) => toast.id !== toastId)),
+    closeToast,
+    currentPage,
     filteredBooks,
+    isLoading,
+    isMutating,
+    loadError,
     openAddModal,
     openBookModal,
     paginatedBooks,
+    pageCount,
+    pageSize,
+    refresh: loadBooks,
     search,
     savedBookIds,
     setSearch,
+    setCurrentPage,
     setSortOption,
     showEmptyState: books.length === 0 && !hasActiveSearchOrFilter,
     showNoResultsState: filteredBooks.length === 0 && hasActiveSearchOrFilter,
     sortOption,
     sortedBooks,
-    submitModal,
+    submitAddBook,
+    submitDeleteBook,
+    submitEditBook,
+    submitLoanBook,
+    submitReturnBook,
     toasts,
     toggleSavedBook,
     toggleFilter

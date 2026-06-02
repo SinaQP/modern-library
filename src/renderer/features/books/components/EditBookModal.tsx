@@ -1,52 +1,70 @@
-import type { ReactElement } from "react";
+import type { FormEvent, ReactElement } from "react";
+import { useState } from "react";
 import { Pencil, Save, Trash2 } from "lucide-react";
 import { BookModalFrame } from "./BookModalFrame";
-import type { BookRecord } from "../types";
+import { FormGrid, bookFormUtils } from "./AddBookModal";
+import type { BookFormValues, BookRecord } from "../types";
 
 type EditBookModalProps = {
   book: BookRecord;
+  isSubmitting: boolean;
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: (values: BookFormValues) => Promise<void>;
 };
 
-export function EditBookModal({ book, onClose, onSubmit }: EditBookModalProps): ReactElement {
+export function EditBookModal({ book, isSubmitting, onClose, onSubmit }: EditBookModalProps): ReactElement {
   const formId = "edit-book-form";
+  const [formError, setFormError] = useState("");
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const values = bookFormUtils.readBookForm(event.currentTarget);
+    const error = bookFormUtils.validateBookForm(values);
+    setFormError(error);
+
+    if (error) {
+      return;
+    }
+
+    await onSubmit(values);
+  }
 
   return (
     <BookModalFrame
       footer={(
         <>
-          <button className="books-secondary-button" onClick={onClose} type="button">انصراف</button>
-          <button className="books-navy-action" form={formId} type="submit"><Save size={20} />ذخیره تغییرات</button>
+          <button className="books-secondary-button" disabled={isSubmitting} onClick={onClose} type="button">انصراف</button>
+          <button className="books-navy-action" disabled={isSubmitting} form={formId} type="submit">
+            <Save size={20} />
+            {isSubmitting ? "در حال ذخیره..." : "ذخیره تغییرات"}
+          </button>
         </>
       )}
       icon={Pencil}
       onClose={onClose}
       title="ویرایش کتاب"
     >
-      <form
-        className="book-form-layout"
-        id={formId}
-        onSubmit={(event) => { event.preventDefault(); onSubmit(); }}
-      >
+      <form className="book-form-layout" id={formId} onSubmit={handleSubmit}>
         <aside className="edit-cover-panel">
           <div className={`book-cover edit-cover-panel__cover ${book.coverClass}`}>
             <span>{book.title}</span>
             <small>{book.author}</small>
           </div>
-          <button type="button"><Pencil size={18} />تغییر تصویر</button>
-          <button className="danger-lite" type="button"><Trash2 size={18} />حذف تصویر</button>
+          <button disabled type="button"><Pencil size={18} />تغییر تصویر</button>
+          <button className="danger-lite" disabled type="button"><Trash2 size={18} />حذف تصویر</button>
         </aside>
         <div className="book-modal-form">
-          <label>عنوان کتاب *<input defaultValue={book.title} /></label>
-          <label>نویسنده *<input defaultValue={book.author} /></label>
-          <label>مترجم<input defaultValue="سارا مجیدیه" /></label>
-          <label>دسته‌بندی *<select defaultValue={book.category}><option>{book.category}</option></select></label>
-          <label>ناشر<input defaultValue="نشر نیلوفر" /></label>
-          <label>شابک (ISBN)<input defaultValue={book.isbn} /></label>
-          <label>سال انتشار<input defaultValue="۱۴۰۳" /></label>
-          <label>تعداد نسخه *<input defaultValue="۱" /></label>
-          <label className="form-wide">توضیحات<textarea defaultValue="رمانی شاعرانه درباره امید و رهایی." /></label>
+          {formError ? <p className="form-alert" role="alert">{formError}</p> : null}
+          <FormGrid
+            book={{
+              title: book.title,
+              author: book.author,
+              category: book.category,
+              publisher: book.publisher ?? "",
+              publish_year: book.publishYear || null,
+              description: book.description ?? ""
+            }}
+          />
         </div>
       </form>
     </BookModalFrame>

@@ -1,99 +1,108 @@
-# سامانه مدیریت کتابخانه شخصی و ثبت امانت کتاب
+# سامانه مدیریت کتابخانه شخصی
 
-اپلیکیشن دسکتاپ فارسی (RTL) برای مدیریت کتابخانه شخصی با استفاده از **Electron + SQLite + HTML/CSS/JavaScript**.
+اپلیکیشن دسکتاپ فارسی و راست‌چین برای مدیریت کتابخانه شخصی با **Electron + React + TypeScript + Vite + SQLite**.
 
-## امکانات اصلی
+## امکانات نسخه اول
 
+- نمایش فهرست کتاب‌ها از دیتابیس SQLite
 - افزودن کتاب جدید
 - ویرایش اطلاعات کتاب
-- حذف کتاب با تاییدیه
-- جستجوی زنده بر اساس عنوان، نویسنده، دسته‌بندی، ناشر و سال
-- فیلتر وضعیت کتاب‌ها (همه، موجود، امانت داده شده)
-- ثبت امانت کتاب (نام امانت‌گیرنده + تاریخ امانت)
-- بازگردانی کتاب و پاک‌سازی اطلاعات امانت
-- داشبورد آماری:
-  - مجموع کتاب‌ها
-  - کتاب‌های موجود
-  - کتاب‌های امانت داده شده
+- حذف کتاب با تایید کاربر
+- جستجو در عنوان، نویسنده، دسته‌بندی، ناشر و شناسه نمایشی
+- فیلتر وضعیت کتاب‌ها: همه، در دسترس، امانت داده شده
+- مرتب‌سازی فهرست بر اساس عنوان، نویسنده، سال انتشار، وضعیت و جدیدترین/قدیمی‌ترین
+- ثبت امانت کتاب با نام امانت‌گیرنده و تاریخ امانت
+- بازگردانی کتاب و پاک شدن اطلاعات امانت
+- نمایش حالت‌های بارگذاری، خطا، بدون کتاب و بدون نتیجه
 
 ## تکنولوژی‌ها
 
 - Electron
-- SQLite (با `better-sqlite3`)
-- HTML
-- CSS
-- Vanilla JavaScript
+- React
+- TypeScript
+- Vite
+- SQLite با `better-sqlite3`
+- `lucide-react` برای آیکن‌ها
 
-## ساختار پروژه
+## ساختار اصلی پروژه
 
 ```text
 modern-library/
-├─ main.js
-├─ preload.js
-├─ package.json
-├─ README.md
+├─ main.js                  # فرایند اصلی Electron
+├─ preload.js               # API امن renderer
 ├─ database/
-│  └─ db.js
-├─ renderer/
-│  ├─ index.html
-│  ├─ app.js
-│  └─ styles.css
-└─ assets/
-   ├─ icons/
-   └─ fonts/
+│  └─ db.js                 # ذخیره‌سازی SQLite و قوانین دامنه کتاب
+├─ ipc/
+│  └─ book-handlers.js      # handlerهای IPC کتاب
+├─ shared/
+│  ├─ errors.js
+│  └─ ipc/channels.js
+├─ src/renderer/            # renderer جدید React + TypeScript
+│  ├─ app/
+│  ├─ components/
+│  ├─ features/
+│  └─ styles/
+├─ renderer/                # fallback قدیمی، برای توسعه جدید استفاده نشود
+└─ renderer-dist/           # خروجی build renderer
 ```
 
-## اجرای پروژه
+## اجرا
 
-### پیش‌نیاز
+### پیش‌نیازها
 
 - Node.js نسخه 18 یا بالاتر
 - npm
 
-### نصب و اجرا
+### نصب
 
 ```bash
 npm install
+```
+
+### اجرای برنامه
+
+```bash
 npm start
 ```
 
-## اسکریپت‌های مفید
+این دستور renderer را با Vite build می‌کند و سپس Electron را اجرا می‌کند.
+
+## دستورهای مفید
 
 ```bash
 npm run check
 ```
 
-بررسی سریع سینتکس فایل‌های جاوااسکریپت.
+syntax فایل‌های JavaScript اصلی و TypeScript renderer را بررسی می‌کند.
+
+```bash
+npm run typecheck
+```
+
+فقط بررسی TypeScript را اجرا می‌کند.
+
+```bash
+npm run build
+```
+
+renderer را برای production می‌سازد.
+
+```bash
+npm run dist
+```
+
+نسخه نصب‌شونده Windows را با `electron-builder` می‌سازد. این دستور ممکن است برای دانلود Electron به اینترنت نیاز داشته باشد.
 
 ```bash
 npm run rebuild
 ```
 
-در صورت بروز مشکل ماژول native مربوط به SQLite، این دستور ماژول را برای Electron بازسازی می‌کند.
-
-## رفع خطاهای رایج نصب
-
-اگر خطای زیر را دریافت کردید:
-
-`Electron failed to install correctly`
-
-دستورات زیر را اجرا کنید:
-
-```bash
-rm -rf node_modules/electron
-npm install electron --save-dev
-```
-
-در PowerShell ویندوز:
-
-```powershell
-Remove-Item -LiteralPath node_modules/electron -Recurse -Force
-npm install electron --save-dev
-```
+ماژول native مربوط به SQLite را برای Electron بازسازی می‌کند.
 
 ## نکات فنی
 
-- دیتابیس SQLite به‌صورت خودکار در مسیر `userData` اپلیکیشن ذخیره می‌شود.
-- ارتباط بین Renderer و Main فقط از طریق `preload` و `ipc` انجام می‌شود.
-- دسترسی مستقیم Node.js در Renderer غیرفعال است (`nodeIntegration: false`).
-- رابط کاربری کاملا فارسی و راست‌چین (RTL) طراحی شده است.
+- دیتابیس SQLite به صورت خودکار در مسیر `userData` اپلیکیشن ذخیره می‌شود.
+- renderer به Node.js یا filesystem دسترسی مستقیم ندارد.
+- ارتباط renderer با Electron فقط از طریق `window.libraryAPI` در `preload.js` انجام می‌شود.
+- تنظیمات امنیتی پنجره شامل `contextIsolation: true`، `nodeIntegration: false`، `sandbox: true` و `webSecurity: true` است.
+- مسیر فعال نسخه اول روی مدیریت کتاب‌ها متمرکز است؛ بخش‌های وام‌گیرندگان، تنظیمات و داشبورد جداگانه هنوز وارد scope نسخه اول نشده‌اند.

@@ -563,48 +563,6 @@ input:focus-visible {
   font-weight: 800;
 }
 
-.app-placeholder-main {
-  place-items: center;
-}
-
-.app-placeholder-card {
-  width: min(100%, 620px);
-  min-height: 280px;
-  display: grid;
-  align-content: center;
-  justify-items: center;
-  gap: 18px;
-  text-align: center;
-  padding: clamp(28px, 5vw, 52px);
-}
-
-.app-placeholder-card__icon {
-  width: 76px;
-  height: 76px;
-  border-radius: 50%;
-  color: var(--teal);
-  background: #e8f5f4;
-  display: grid;
-  place-items: center;
-}
-
-.app-placeholder-card h1,
-.app-placeholder-card p {
-  margin: 0;
-}
-
-.app-placeholder-card h1 {
-  color: #142a4d;
-  font-size: clamp(1.3rem, 2vw, 1.8rem);
-  font-weight: 900;
-}
-
-.app-placeholder-card p {
-  max-width: 46ch;
-  color: #71819d;
-  line-height: 1.9;
-}
-
 .pill-button {
   min-width: 58px;
   min-height: 31px;
@@ -1960,9 +1918,20 @@ input:focus-visible {
 }
 
 .books-filter-tab.is-selected {
-  border-color: #cde1e5;
-  color: #293c5d;
-  background: #fbfefe;
+  border-width: 2px;
+  box-shadow: 0 14px 26px rgba(22, 47, 87, 0.14);
+}
+
+.books-filter-tab.is-selected:has(.filter-dot--teal) {
+  border-color: #008f89;
+  color: #064844;
+  background: #d8f5f1;
+}
+
+.books-filter-tab.is-selected:has(.filter-dot--orange) {
+  border-color: #ef6f00;
+  color: #6a3100;
+  background: #fff0df;
 }
 
 .filter-dot {

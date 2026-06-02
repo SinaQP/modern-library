@@ -7,19 +7,9 @@ type SidebarProps = {
   isEmpty: boolean;
 };
 
-const hashByItem = {
-  dashboard: "",
-  books: "#books",
-  loans: "#loans",
-  borrowers: "#borrowers",
-  settings: "#settings"
-};
+const v1SidebarItems = sidebarItems.filter((item) => item.key === "books");
 
-export function Sidebar({ activeItem = "dashboard", isEmpty }: SidebarProps): ReactElement {
-  function navigateTo(itemKey: keyof typeof hashByItem) {
-    window.location.hash = hashByItem[itemKey];
-  }
-
+export function Sidebar({ activeItem = "books", isEmpty }: SidebarProps): ReactElement {
   return (
     <aside className="dashboard-sidebar" aria-label="ناوبری اصلی">
       <div className="sidebar-content">
@@ -34,14 +24,16 @@ export function Sidebar({ activeItem = "dashboard", isEmpty }: SidebarProps): Re
         </div>
 
         <nav className="sidebar-menu">
-          {sidebarItems.map((item) => {
+          {v1SidebarItems.map((item) => {
             const Icon = item.icon;
-            const isActive = item.key === activeItem;
+            const isActive = item.key === activeItem || activeItem === "dashboard";
             return (
               <button
                 className={isActive ? "sidebar-menu__item is-active" : "sidebar-menu__item"}
                 key={item.label}
-                onClick={() => navigateTo(item.key)}
+                onClick={() => {
+                  window.location.hash = "#books";
+                }}
                 type="button"
               >
                 <Icon size={24} aria-hidden="true" />
@@ -54,8 +46,8 @@ export function Sidebar({ activeItem = "dashboard", isEmpty }: SidebarProps): Re
 
       {isEmpty ? (
         <div className="sidebar-status">
-          <span>نسخه ۱.۰.۰</span>
-          <strong><i aria-hidden="true" />آنلاین</strong>
+          <span>نسخه 1.0.0</span>
+          <strong><i aria-hidden="true" />آماده</strong>
         </div>
       ) : null}
     </aside>

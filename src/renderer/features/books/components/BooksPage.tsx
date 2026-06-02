@@ -1,5 +1,7 @@
 import { useState, type ReactElement } from "react";
 import { AppLayout } from "../../../app/layout/AppLayout";
+import { ErrorState } from "../../../components/ui/ErrorState";
+import { LoadingState } from "../../../components/ui/LoadingState";
 import { BookGrid } from "./BookGrid";
 import { BookList } from "./BookList";
 import { BooksEmptyState } from "./BooksEmptyState";
@@ -31,6 +33,38 @@ export function BooksPage({ routeState }: BooksPageProps): ReactElement {
     savedBookIds: booksState.savedBookIds
   };
 
+  function renderContent(): ReactElement {
+    if (booksState.isLoading) {
+      return <LoadingState />;
+    }
+
+    if (booksState.loadError) {
+      return <ErrorState message={booksState.loadError} onRetry={booksState.refresh} />;
+    }
+
+    if (booksState.showEmptyState) {
+      return <BooksEmptyState onAdd={booksState.openAddModal} />;
+    }
+
+    if (booksState.showNoResultsState) {
+      return (
+        <BooksNoResultsState
+          activeFilters={booksState.activeFilters}
+          onAdd={booksState.openAddModal}
+          onClearFilters={booksState.clearFilters}
+          onClearSearch={booksState.clearSearch}
+          search={booksState.search}
+        />
+      );
+    }
+
+    return viewMode === "grid" ? (
+      <BookGrid books={booksState.paginatedBooks} {...bookActionProps} />
+    ) : (
+      <BookList books={booksState.paginatedBooks} {...bookActionProps} />
+    );
+  }
+
   return (
     <AppLayout activeItem="books" mainClassName="books-main" shellClassName="books-shell">
       <BooksToolbar
@@ -48,43 +82,33 @@ export function BooksPage({ routeState }: BooksPageProps): ReactElement {
       />
       <BooksViewControls onViewModeChange={setViewMode} viewMode={viewMode} />
 
-      {booksState.showEmptyState ? (
-        <BooksEmptyState onAdd={booksState.openAddModal} />
-      ) : booksState.showNoResultsState ? (
-        <BooksNoResultsState
-          activeFilters={booksState.activeFilters}
-          onAdd={booksState.openAddModal}
-          onClearFilters={booksState.clearFilters}
-          onClearSearch={booksState.clearSearch}
-          search={booksState.search}
-        />
-      ) : (
-        viewMode === "grid" ? (
-          <BookGrid
-            books={booksState.paginatedBooks}
-            {...bookActionProps}
-          />
-        ) : (
-          <BookList
-            books={booksState.paginatedBooks}
-            {...bookActionProps}
-          />
-        )
-      )}
+      {booksState.actionError ? <p className="page-alert" role="alert">{booksState.actionError}</p> : null}
+      {renderContent()}
 
-      <BooksPagination total={booksState.sortedBooks.length} />
+      {!booksState.isLoading && !booksState.loadError ? (
+        <BooksPagination
+          currentPage={booksState.currentPage}
+          onPageChange={booksState.setCurrentPage}
+          pageCount={booksState.pageCount}
+          pageSize={booksState.pageSize}
+          total={booksState.sortedBooks.length}
+          visibleCount={booksState.paginatedBooks.length}
+        />
+      ) : null}
 
       <BooksModalHost
         activeModal={booksState.activeModal}
         book={booksState.activeBook}
+        isSubmitting={booksState.isMutating}
         onClose={booksState.closeModal}
+        onDelete={booksState.submitDeleteBook}
         onOpenBookModal={booksState.openBookModal}
-        onSubmit={booksState.submitModal}
+        onSubmitAdd={booksState.submitAddBook}
+        onSubmitEdit={booksState.submitEditBook}
+        onSubmitLoan={booksState.submitLoanBook}
+        onSubmitReturn={booksState.submitReturnBook}
       />
-      <ToastNotification
-        onClose={booksState.closeToast}
-        toasts={booksState.toasts}
-      />
+      <ToastNotification onClose={booksState.closeToast} toasts={booksState.toasts} />
     </AppLayout>
   );
 }

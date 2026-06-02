@@ -5,17 +5,20 @@ import type { BookRecord } from "../types";
 
 type DeleteBookDialogProps = {
   book: BookRecord;
+  isSubmitting: boolean;
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: () => Promise<void>;
 };
 
-export function DeleteBookDialog({ book, onClose, onSubmit }: DeleteBookDialogProps): ReactElement {
+export function DeleteBookDialog({ book, isSubmitting, onClose, onSubmit }: DeleteBookDialogProps): ReactElement {
   return (
     <BookModalFrame
       footer={(
         <>
-          <button className="books-secondary-button" onClick={onClose} type="button">انصراف</button>
-          <button className="books-danger-action" onClick={onSubmit} type="button">حذف کتاب</button>
+          <button className="books-secondary-button" disabled={isSubmitting} onClick={onClose} type="button">انصراف</button>
+          <button className="books-danger-action" disabled={isSubmitting} onClick={onSubmit} type="button">
+            {isSubmitting ? "در حال حذف..." : "حذف کتاب"}
+          </button>
         </>
       )}
       icon={AlertTriangle}

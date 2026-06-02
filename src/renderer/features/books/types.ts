@@ -9,7 +9,7 @@ export type BookRecord = {
   createdAt: string;
   description?: string;
   dueDate?: string;
-  id: string;
+  id: number;
   isbn: string;
   loanDate?: string;
   publishYear: number;
@@ -19,7 +19,21 @@ export type BookRecord = {
   translator?: string;
 };
 
-export type BookFilter = "available" | "loaned" | "overdue";
+export type BookFilter = "available" | "loaned";
+
+export type BookFormValues = {
+  author: string;
+  category: string;
+  description: string;
+  publish_year: number | null;
+  publisher: string;
+  title: string;
+};
+
+export type LoanFormValues = {
+  borrow_date: string;
+  borrower_name: string;
+};
 
 export type BookSortOption =
   | "newest"

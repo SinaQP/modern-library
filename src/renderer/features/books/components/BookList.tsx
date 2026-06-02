@@ -10,7 +10,7 @@ type BookListProps = {
   onOpenDetails: (book: BookRecord) => void;
   onReturn: (book: BookRecord) => void;
   onToggleSaved: (book: BookRecord) => void;
-  savedBookIds: Set<string>;
+  savedBookIds: Set<number>;
 };
 
 export function BookList({

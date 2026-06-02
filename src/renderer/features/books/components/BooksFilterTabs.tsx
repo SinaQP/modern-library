@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { AlertTriangle, Bookmark, FilterX, Grid2X2, HandHeart } from "lucide-react";
+import { Bookmark, FilterX, Grid2X2, HandHeart } from "lucide-react";
 import type { BookFilter } from "../types";
 
 type BooksFilterTabsProps = {
@@ -42,14 +42,6 @@ export function BooksFilterTabs({
         <HandHeart size={22} aria-hidden="true" />
         <i className="filter-dot filter-dot--orange" />
         <span>امانت داده شده</span>
-      </button>
-      <button
-        className={activeFilters.has("overdue") ? "books-filter-tab is-selected" : "books-filter-tab"}
-        onClick={() => onToggleFilter("overdue")}
-        type="button"
-      >
-        <AlertTriangle size={22} aria-hidden="true" />
-        <span>معوق</span>
       </button>
       <button className="books-filter-clear" onClick={onClearFilters} type="button">
         <FilterX size={22} aria-hidden="true" />
